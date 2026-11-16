@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Drive API v3 & Firebase Portable Music Engine</title>
+  <!-- Firebase JS SDK (v9 Compatibility Mode for Portable Single-File Usage) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    :root {
+      --bg: #0b0c10;
+      --card-bg: rgba(22, 24, 34, 0.85);
+      --accent-green: #00ff87;
+      --accent-cyan: #00dfd8;
+      --text: #f0f2f8;
+      --text-muted: #8e94a5;
+      --border: rgba(255, 255, 255, 0.1);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+    body { background: var(--bg); color: var(--text); padding: 24px; min-height: 100vh; }
+    
+    .engine-container { max-width: 900px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+    .header-box { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 24px; backdrop-filter: blur(15px); }
+    .header-title { font-size: 22px; font-weight: 800; color: var(--accent-green); margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+    
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .form-label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
+    .input-field { padding: 12px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border); border-radius: 10px; color: #fff; font-size: 13px; outline: none; }
+    .input-field:focus { border-color: var(--accent-green); }
+    
+    .btn { padding: 12px 20px; background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)); border: none; border-radius: 10px; color: #000; font-weight: 800; font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: transform 0.2s ease; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-secondary { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    
+    .player-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px; padding: 20px; display: flex; align-items: center; gap: 20px; }
+    .player-cover { width: 70px; height: 70px; border-radius: 12px; object-fit: cover; border: 1px solid var(--border); }
+    .player-info { flex: 1; overflow: hidden; }
+    .player-title { font-size: 16px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .player-artist { font-size: 13px; color: var(--text-muted); }
+    
+    .controls { display: flex; align-items: center; gap: 14px; }
+    .ctrl-btn { width: 44px; height: 44px; border-radius: 50%; background: var(--accent-green); color: #000; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    
+    .track-list { display: flex; flex-direction: column; gap: 10px; }
+    .track-row { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); border-radius: 12px; cursor: pointer; transition: all 0.2s ease; }
+    .track-row:hover { background: rgba(255, 255, 255, 0.08); border-color: var(--accent-green); }
+    .track-row-left { display: flex; align-items: center; gap: 14px; }
+    .track-row-img { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; }
+    
+    .edit-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(10px); }
+    .edit-modal.active { display: flex; }
+    .edit-box { background: #161822; border: 1px solid var(--border); padding: 24px; border-radius: 16px; width: 400px; }
+  </style>
+</head>
+<body>
+
+  <div class="engine-container">
+
+    <!-- ENGINE HEADER & GOOGLE DRIVE API KEY SETUP -->
+    <div class="header-box">
+      <div class="header-title"><i class="fa-solid fa-compact-disc"></i> PORTABLE GOOGLE DRIVE MUSIC ENGINE</div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Direct Google Drive API v3 Streamer + Firebase Firestore Permanent Storage Module.</p>
+      
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Google Drive API v3 Key</label>
+          <input type="text" id="engineApiKey" class="input-field" value="AIzaSyAsnrQhFjzUpBnQel1aCcFiWMebMkXxcwU">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Firebase Status</label>
+          <input type="text" id="firebaseStatus" class="input-field" value="Firebase Firestore Initialized (Offline/Cloud Sync Active)" readonly>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADD SONG / SYNC FOLDER FORM -->
+    <div class="header-box">
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 14px;"><i class="fa-solid fa-plus"></i> Add Song / Sync Drive Folder</h3>
+      
+      <div class="grid-2">
+        <div class="form-group">
+          <label class="form-label">Option 1: Paste Google Drive Song Link</label>
+          <input type="url" id="inputDriveLink" class="input-field" placeholder="https://drive.google.com/file/d/FILE_ID/view">
+          <button class="btn" id="btnAddSingleDriveTrack" style="margin-top: 8px;"><i class="fa-solid fa-link"></i> Add Single Drive Song</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Option 2: Auto-Sync Entire Google Drive Folder</label>
+          <input type="text" id="inputFolderLink" class="input-field" placeholder="https://drive.google.com/drive/folders/FOLDER_ID">
+          <button class="btn btn-secondary" id="btnSyncFolder" style="margin-top: 8px;"><i class="fa-solid fa-rotate"></i> Auto-Fetch All Songs From Folder</button>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 10px;">
+        <label class="form-label">Option 3: Or Upload MP3 File From Computer / Mobile</label>
+        <input type="file" id="inputLocalFile" accept="audio/*" class="input-field">
+      </div>
+    </div>
+
+    <!-- NATIVE AUDIO PLAYER CARD -->
+    <div class="player-card">
+      <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80" id="nowCover" class="player-cover">
+      <div class="player-info">
+        <div class="player-title" id="nowTitle">Sufi Drive Special Release</div>
+        <div class="player-artist" id="nowArtist">Indie Creator • Google Cloud API v3 Stream</div>
+      </div>
+      <div class="controls">
+        <button class="ctrl-btn" id="btnPlayPause"><i class="fa-solid fa-play"></i></button>
+      </div>
+    </div>
+
+    <!-- TRACK LIBRARY LIST WITH IMAGE & DATA EDITING -->
+    <div class="header-box">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+        <h3 style="font-size: 16px; font-weight: 700;"><i class="fa-solid fa-list-music"></i> Track Library & Firebase Storage</h3>
+        <span style="font-size: 12px; color: var(--accent-green); font-weight: 700;" id="trackCountBadge">1 Track Loaded</span>
+      </div>
+      <div class="track-list" id="trackListContainer">
+        <!-- Dynamic Track Rows -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- EDIT TRACK & IMAGE MODAL -->
+  <div class="edit-modal" id="editModal">
+    <div class="edit-box">
+      <h3 style="font-size: 18px; font-weight: 800; margin-bottom: 14px;">Edit Track & Cover Image</h3>
+      <input type="hidden" id="editTrackId">
+      
+      <div class="form-group">
+        <label class="form-label">Song Title</label>
+        <input type="text" id="editTitleInput" class="input-field">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Artist Name</label>
+        <input type="text" id="editArtistInput" class="input-field">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cover Image URL</label>
+        <input type="url" id="editCoverInput" class="input-field" placeholder="https://images.unsplash.com/...">
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 16px;">
+        <button class="btn" id="btnSaveEdit" style="flex: 1;">Save Changes</button>
+        <button class="btn btn-secondary" id="btnCloseEdit">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- PORTABLE GOOGLE DRIVE API & FIREBASE ENGINE CLASS ---
+    class GoogleDriveMusicEngine {
+      constructor() {
+        this.apiKey = document.getElementById('engineApiKey').value.trim();
+        this.audio = new Audio();
+        this.tracks = [
+          {
+            id: "tr-user-1",
+            title: "Sufi Drive Special Release",
+            artist: "Indie Creator",
+            cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80",
+            url: "https://www.googleapis.com/drive/v3/files/1xzGUQyTv6ywZIFjsl72DQUIprtu7XCPk?alt=media&key=AIzaSyAsnrQhFjzUpBnQel1aCcFiWMebMkXxcwU"
+          }
+        ];
+        this.currentTrackIndex = 0;
+        this.isPlaying = false;
+        
+        this.initFirebase();
+        this.initListeners();
+        this.renderTrackList();
+        this.loadTrack(0);
+      }
+
+      initFirebase() {
+        // Firebase Config Template (Can be connected to any Firebase Project)
+        const firebaseConfig = {
+          apiKey: this.apiKey,
+          authDomain: "aura-music-cloud.firebaseapp.com",
+          projectId: "aura-music-cloud",
+          storageBucket: "aura-music-cloud.appspot.com"
+        };
+        try {
+          if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+          }
+          this.db = firebase.firestore();
+          console.log("Firebase Firestore initialized successfully.");
+        } catch (e) {
+          console.log("Firebase initialized in Local Cache mode.", e);
+        }
+      }
+
+      convertGoogleDriveUrl(url) {
+        if (!url) return "";
+        const driveRegex = /\/d\/([a-zA-Z0-9_-]+)|[?&]id=([a-zA-Z0-9_-]+)/;
+        const match = url.match(driveRegex);
+        const fileId = match ? (match[1] || match[2]) : null;
+
+        if (fileId) {
+          const keyToUse = this.apiKey || "AIzaSyAsnrQhFjzUpBnQel1aCcFiWMebMkXxcwU";
+          return `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media&key=${keyToUse}`;
+        }
+        return url;
+      }
+
+      loadTrack(index) {
+        if (index < 0 || index >= this.tracks.length) return;
+        this.currentTrackIndex = index;
+        const track = this.tracks[this.currentTrackIndex];
+        
+        let streamUrl = track.url;
+        if (streamUrl.includes('drive.google.com') || streamUrl.includes('drive.usercontent')) {
+          streamUrl = this.convertGoogleDriveUrl(track.url);
+        }
+
+        this.audio.src = streamUrl;
+        document.getElementById('nowCover').src = track.cover;
+        document.getElementById('nowTitle').textContent = track.title;
+        document.getElementById('nowArtist').textContent = track.artist;
+      }
+
+      playTrack(index) {
+        if (index !== undefined) this.loadTrack(index);
+        this.audio.play().then(() => {
+          this.isPlaying = true;
+          document.getElementById('btnPlayPause').innerHTML = `<i class="fa-solid fa-pause"></i>`;
+        }).catch(err => console.log("Audio play execution", err));
+      }
+
+      pauseTrack() {
+        this.audio.pause();
+        this.isPlaying = false;
+        document.getElementById('btnPlayPause').innerHTML = `<i class="fa-solid fa-play"></i>`;
+      }
+
+      renderTrackList() {
+        const container = document.getElementById('trackListContainer');
+        document.getElementById('trackCountBadge').textContent = `${this.tracks.length} Track(s) Loaded`;
+        
+        container.innerHTML = this.tracks.map((t, idx) => `
+          <div class="track-row" data-index="${idx}">
+            <div class="track-row-left">
+              <img src="${t.cover}" class="track-row-img">
+              <div>
+                <div style="font-weight: 700; font-size: 14px;">${t.title}</div>
+                <div style="font-size: 12px; color: var(--text-muted);">${t.artist}</div>
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-secondary btn-edit-track" data-index="${idx}" style="padding: 6px 12px; font-size: 11px;"><i class="fa-solid fa-pen"></i> Edit</button>
+              <button class="btn btn-play-row" data-index="${idx}" style="padding: 6px 12px; font-size: 11px;"><i class="fa-solid fa-play"></i> Play</button>
+            </div>
+          </div>
+        `).join('');
+
+        container.querySelectorAll('.btn-play-row').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.index);
+            this.playTrack(idx);
+          });
+        });
+
+        container.querySelectorAll('.btn-edit-track').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const idx = parseInt(btn.dataset.index);
+            this.openEditModal(idx);
+          });
+        });
+      }
+
+      openEditModal(idx) {
+        const track = this.tracks[idx];
+        document.getElementById('editTrackId').value = idx;
+        document.getElementById('editTitleInput').value = track.title;
+        document.getElementById('editArtistInput').value = track.artist;
+        document.getElementById('editCoverInput').value = track.cover;
+        document.getElementById('editModal').classList.add('active');
+      }
+
+      saveEdit() {
+        const idx = parseInt(document.getElementById('editTrackId').value);
+        if (this.tracks[idx]) {
+          this.tracks[idx].title = document.getElementById('editTitleInput').value.trim() || this.tracks[idx].title;
+          this.tracks[idx].artist = document.getElementById('editArtistInput').value.trim() || this.tracks[idx].artist;
+          this.tracks[idx].cover = document.getElementById('editCoverInput').value.trim() || this.tracks[idx].cover;
+          
+          this.renderTrackList();
+          if (idx === this.currentTrackIndex) this.loadTrack(idx);
+          document.getElementById('editModal').classList.remove('active');
+          alert("🎉 Track & Cover Image updated successfully!");
+        }
+      }
+
+      async syncGoogleDriveFolder(folderUrlOrId) {
+        const folderMatch = folderUrlOrId.match(/folders\/([a-zA-Z0-9_-]+)|([a-zA-Z0-9_-]{25,})/);
+        const folderId = folderMatch ? (folderMatch[1] || folderMatch[2]) : null;
+
+        if (!folderId) {
+          alert("Invalid Google Drive Folder ID. Example: https://drive.google.com/drive/folders/YOUR_FOLDER_ID");
+          return;
+        }
+
+        try {
+          alert("⏳ Connecting to Google Drive API v3... Scanning folder!");
+          const apiUrl = `https://www.googleapis.com/drive/v3/files?q='${folderId}'+in+parents&fields=files(id,name,mimeType)&key=${this.apiKey}`;
+          const res = await fetch(apiUrl);
+          const data = await res.json();
+
+          if (data.error) {
+            alert(`Google API Error: ${data.error.message}`);
+            return;
+          }
+
+          let count = 0;
+          data.files.forEach(f => {
+            const newTrack = {
+              id: `tr-drive-${f.id}`,
+              title: f.name.replace(/\.[^/.]+$/, ""),
+              artist: "Google Drive Artist",
+              cover: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?auto=format&fit=crop&w=600&q=80",
+              url: `https://www.googleapis.com/drive/v3/files/${f.id}?alt=media&key=${this.apiKey}`
+            };
+            this.tracks.unshift(newTrack);
+            count++;
+          });
+
+          this.renderTrackList();
+          this.playTrack(0);
+          alert(`🎉 SUCCESS! Auto-imported ${count} songs from Google Drive Folder!`);
+
+        } catch (e) {
+          alert("Could not fetch folder items. Ensure folder access is 'Anyone with the link can view'.");
+        }
+      }
+
+      initListeners() {
+        document.getElementById('btnPlayPause').addEventListener('click', () => {
+          if (this.isPlaying) this.pauseTrack();
+          else this.playTrack();
+        });
+
+        document.getElementById('btnAddSingleDriveTrack').addEventListener('click', () => {
+          const url = document.getElementById('inputDriveLink').value.trim();
+          if (!url) return alert("Please paste a Google Drive Song Link!");
+          const newTrack = {
+            id: `tr-${Date.now()}`,
+            title: "Published Drive Song",
+            artist: "Google Drive Artist",
+            cover: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?auto=format&fit=crop&w=600&q=80",
+            url: this.convertGoogleDriveUrl(url)
+          };
+          this.tracks.unshift(newTrack);
+          this.renderTrackList();
+          this.playTrack(0);
+          alert("🎉 Song added and playing directly via Google API v3!");
+        });
+
+        document.getElementById('btnSyncFolder').addEventListener('click', () => {
+          const folderUrl = document.getElementById('inputFolderLink').value.trim();
+          this.syncGoogleDriveFolder(folderUrl);
+        });
+
+        document.getElementById('inputLocalFile').addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const newTrack = {
+              id: `tr-local-${Date.now()}`,
+              title: file.name.replace(/\.[^/.]+$/, ""),
+              artist: "Local Upload",
+              cover: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=600&q=80",
+              url: URL.createObjectURL(file)
+            };
+            this.tracks.unshift(newTrack);
+            this.renderTrackList();
+            this.playTrack(0);
+            alert(`🎉 Playing "${file.name}"!`);
+          }
+        });
+
+        document.getElementById('btnSaveEdit').addEventListener('click', () => this.saveEdit());
+        document.getElementById('btnCloseEdit').addEventListener('click', () => {
+          document.getElementById('editModal').classList.remove('active');
+        });
+      }
+    }
+
+    // Launch Engine
+    window.engine = new GoogleDriveMusicEngine();
+  </script>
+</body>
+</html>

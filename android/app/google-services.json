@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "850962611354",
+    "firebase_url": "https://exoticglobalmusic-default-rtdb.firebaseio.com",
+    "project_id": "exoticglobalmusic",
+    "storage_bucket": "exoticglobalmusic.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:850962611354:android:17b72b13d9ff20ea847323",
+        "android_client_info": {
+          "package_name": "com.global.exotic.exotic"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCPu271Nc41d8E04PrgXgTT9ZFvRAhZ4Zw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

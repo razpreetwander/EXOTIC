@@ -1,0 +1,173 @@
+import '../models/song_model.dart';
+import '../models/playlist_model.dart';
+
+class MusicData {
+  static final List<Song> allSongs = [
+    Song(
+      id: 'exotic_01',
+      title: 'Starboy (Exotic Edit)',
+      artist: 'The Weeknd ft. Daft Punk',
+      album: 'Starboy Remastered',
+      duration: const Duration(minutes: 3, seconds: 50),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=800&auto=format&fit=crop',
+      genre: 'Pop / Synth',
+      lyrics: [
+        LyricLine(timestamp: const Duration(seconds: 5), text: 'I am trying to put you in the worst mood...'),
+        LyricLine(timestamp: const Duration(seconds: 12), text: 'P1 cleaner than your church shoes...'),
+        LyricLine(timestamp: const Duration(seconds: 22), text: 'Milli point two just to hurt you...'),
+        LyricLine(timestamp: const Duration(seconds: 32), text: 'Look what you have done, I am a Starboy...'),
+        LyricLine(timestamp: const Duration(seconds: 45), text: '[Synth Drop]'),
+        LyricLine(timestamp: const Duration(seconds: 60), text: 'Every day a main bitch, main bitch...'),
+      ],
+    ),
+    Song(
+      id: 'exotic_02',
+      title: 'Midnight City Beats',
+      artist: 'M83 & Exotic Sound',
+      album: 'Hurry Up, We Are Dreaming',
+      duration: const Duration(minutes: 4, seconds: 03),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=800&auto=format&fit=crop',
+      genre: 'Electronic',
+      lyrics: [
+        LyricLine(timestamp: const Duration(seconds: 4), text: 'Waiting in a car...'),
+        LyricLine(timestamp: const Duration(seconds: 15), text: 'Waiting for a ride in the dark...'),
+        LyricLine(timestamp: const Duration(seconds: 28), text: 'The night city is my church...'),
+        LyricLine(timestamp: const Duration(seconds: 40), text: 'It teaches me to trust...'),
+      ],
+    ),
+    Song(
+      id: 'exotic_03',
+      title: 'Desire (Exotic Club Mix)',
+      artist: 'Years & Years ft. DJ Snake',
+      album: 'Communion',
+      duration: const Duration(minutes: 3, seconds: 25),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+      coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop',
+      genre: 'Dance',
+      lyrics: [
+        LyricLine(timestamp: const Duration(seconds: 8), text: 'I desire to be with you...'),
+        LyricLine(timestamp: const Duration(seconds: 18), text: 'Hold me close until the morning light...'),
+        LyricLine(timestamp: const Duration(seconds: 30), text: 'Feel the rhythm pulsing inside...'),
+        LyricLine(timestamp: const Duration(seconds: 42), text: '[Club Drop]'),
+      ],
+    ),
+    Song(
+      id: 'exotic_04',
+      title: 'Tum Hi Ho (Exotic Lounge)',
+      artist: 'Arijit Singh',
+      album: 'Aashiqui 2 Remastered',
+      duration: const Duration(minutes: 4, seconds: 22),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
+      genre: 'Bollywood',
+      lyrics: [
+        LyricLine(timestamp: const Duration(seconds: 6), text: 'Hum tere bin ab reh nahi sakte...'),
+        LyricLine(timestamp: const Duration(seconds: 16), text: 'Tere bina kya wajood mera...'),
+        LyricLine(timestamp: const Duration(seconds: 28), text: 'Tujhse juda gar ho jaayenge...'),
+        LyricLine(timestamp: const Duration(seconds: 40), text: 'Toh khud se hi ho jaayenge judaa...'),
+      ],
+    ),
+    Song(
+      id: 'exotic_05',
+      title: 'Levitating (Exotic Remix)',
+      artist: 'Dua Lipa ft. DaBaby',
+      album: 'Future Nostalgia',
+      duration: const Duration(minutes: 3, seconds: 23),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+      coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800&auto=format&fit=crop',
+      genre: 'Pop',
+      lyrics: [
+        LyricLine(timestamp: const Duration(seconds: 5), text: 'If you wanna run away with me, I know a galaxy...'),
+        LyricLine(timestamp: const Duration(seconds: 15), text: 'And I can take you for a ride...'),
+        LyricLine(timestamp: const Duration(seconds: 25), text: 'I had a premonition that we fell into a rhythm...'),
+        LyricLine(timestamp: const Duration(seconds: 35), text: 'Where the music don\'t stop all night...'),
+      ],
+    ),
+    Song(
+      id: 'exotic_06',
+      title: 'Blinding Lights',
+      artist: 'The Weeknd',
+      album: 'After Hours',
+      duration: const Duration(minutes: 3, seconds: 20),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+      coverUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=800&auto=format&fit=crop',
+      genre: 'Synthwave',
+      lyrics: [
+        LyricLine(timestamp: const Duration(seconds: 10), text: 'I\'ve been tryna call...'),
+        LyricLine(timestamp: const Duration(seconds: 20), text: 'I\'ve been on my own for long enough...'),
+      ],
+    ),
+    Song(
+      id: 'exotic_07',
+      title: 'Pasoori (Exotic Acoustic)',
+      artist: 'Ali Sethi x Shae Gill',
+      album: 'Coke Studio Season 14',
+      duration: const Duration(minutes: 3, seconds: 44),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
+      coverUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?q=80&w=800&auto=format&fit=crop',
+      genre: 'Folk / Indie',
+      lyrics: [
+        LyricLine(timestamp: const Duration(seconds: 7), text: 'Agg laawan majboori nu...'),
+        LyricLine(timestamp: const Duration(seconds: 17), text: 'Aan jaan di pasoorii nu...'),
+      ],
+    ),
+    Song(
+      id: 'exotic_08',
+      title: 'Kesariya (Exotic Vibe)',
+      artist: 'Arijit Singh & Pritam',
+      album: 'Brahmastra Soundtrack',
+      duration: const Duration(minutes: 4, seconds: 28),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+      coverUrl: 'https://images.unsplash.com/photo-1598387993441-a364f854c3e1?q=80&w=800&auto=format&fit=crop',
+      genre: 'Bollywood',
+      lyrics: [
+        LyricLine(timestamp: const Duration(seconds: 12), text: 'Mujhko kitna pyaar hai tumse...'),
+        LyricLine(timestamp: const Duration(seconds: 24), text: 'Kesariya tera ishq hai piya...'),
+      ],
+    ),
+  ];
+
+  static final List<Playlist> featuredPlaylists = [
+    Playlist(
+      id: 'pl_01',
+      title: 'Exotic Top 50 Global',
+      description: 'Your daily update of the most played tracks right now.',
+      coverUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800&auto=format&fit=crop',
+      songs: [allSongs[0], allSongs[2], allSongs[3], allSongs[4], allSongs[7]],
+    ),
+    Playlist(
+      id: 'pl_02',
+      title: 'Midnight Synth & Cyber',
+      description: 'Electronic synthwave for late night focus and driving.',
+      coverUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=800&auto=format&fit=crop',
+      songs: [allSongs[0], allSongs[1], allSongs[5]],
+    ),
+    Playlist(
+      id: 'pl_03',
+      title: 'Bollywood Hits & Desi Spice',
+      description: 'Blockbuster romantic anthems and trending Indian charts.',
+      coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=800&auto=format&fit=crop',
+      songs: [allSongs[3], allSongs[6], allSongs[7]],
+    ),
+    Playlist(
+      id: 'pl_04',
+      title: 'Chill Lo-Fi Beats',
+      description: 'Soft beats to relax, study, and code to.',
+      coverUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=800&auto=format&fit=crop',
+      songs: [allSongs[1], allSongs[6]],
+    ),
+  ];
+
+  static final List<Map<String, String>> genres = [
+    {'name': 'Pop', 'color': '0xFF1DB954'},
+    {'name': 'Bollywood', 'color': '0xFFE91E63'},
+    {'name': 'Electronic', 'color': '0xFF2D9CDB'},
+    {'name': 'Dance', 'color': '0xFF8E44AD'},
+    {'name': 'Synthwave', 'color': '0xFFF2994A'},
+    {'name': 'Folk / Indie', 'color': '0xFF27AE60'},
+    {'name': 'Hip-Hop', 'color': '0xFFEB5757'},
+    {'name': 'Rock', 'color': '0xFF9B51E0'},
+  ];
+}

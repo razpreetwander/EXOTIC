@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="EXOTIC MUSIC - Stream high quality music, live lyrics, custom playlists and audio equalizer.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="EXOTIC MUSIC">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>EXOTIC MUSIC - Cyber Stream</title>
+  <link rel="manifest" href="manifest.json">
+
+  <!-- Firebase Web SDK Initialization (exoticglobalmusic) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      projectId: "exoticglobalmusic",
+      appId: "1:850962611354:web:66856825dc38bb7d847323",
+      storageBucket: "exoticglobalmusic.firebasestorage.app",
+      apiKey: "AIzaSyCPu271Nc41d8E04PrgXgTT9ZFvRAhZ4Zw",
+      authDomain: "exoticglobalmusic.firebaseapp.com",
+      messagingSenderId: "850962611354",
+      measurementId: "G-M7F4D6TTS4",
+      projectNumber: "850962611354",
+      databaseURL: "https://exoticglobalmusic-default-rtdb.firebaseio.com"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+</head>
+<body>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>
