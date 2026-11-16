@@ -42,4 +42,13 @@ app.*.map.json
 # Android Studio will place build artifacts here
 /android/app/debug
 /android/app/profile
-/android/app/release
+**/android/local.properties
+**/android/.kotlin/
+*.dex
+*.arsc
+/FULL SCOURCE CODE/
+android/app/src/main/exotic_full_source/
+android/app/*.dex
+android/app/*.arsc
+android/app/*.properties
+!android/app/gradle.properties

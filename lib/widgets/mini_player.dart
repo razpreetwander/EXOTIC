@@ -39,113 +39,150 @@ class MiniPlayer extends StatelessWidget {
         );
       },
       child: Container(
-        height: 64,
-        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        height: 56,
+        margin: const EdgeInsets.fromLTRB(8, 0, 8, 4),
         decoration: BoxDecoration(
-          color: AppColors.playerBar,
+          color: const Color(0xFF381F42),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.white10),
-          boxShadow: const [
+          border: Border.all(color: Colors.white.withOpacity(0.08)),
+          boxShadow: [
             BoxShadow(
-              color: Colors.black54,
+              color: Colors.black.withOpacity(0.4),
               blurRadius: 10,
-              offset: Offset(0, -2),
+              offset: const Offset(0, -2),
             ),
           ],
         ),
         child: Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              child: Row(
-                children: [
-                  // Track Cover Art
-                  Hero(
-                    tag: 'now_playing_art_${currentSong.id}',
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: Image.network(
-                        currentSong.coverUrl,
-                        width: 44,
-                        height: 44,
-                        fit: BoxFit.cover,
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10),
+                child: Row(
+                  children: [
+                    // Track Cover Art
+                    Hero(
+                      tag: 'now_playing_art_${currentSong.id}',
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(4),
+                        child: Image.network(
+                          currentSong.coverUrl,
+                          width: 40,
+                          height: 40,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            width: 40,
+                            height: 40,
+                            color: const Color(0xFF282828),
+                            child: const Icon(Icons.music_note, color: Colors.white54, size: 20),
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Title & Artist
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          currentSong.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textPrimary,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          currentSong.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Connect Device Icon
-                  IconButton(
-                    icon: const Icon(Icons.devices, color: AppColors.textSecondary, size: 20),
-                    onPressed: () {
-                      showModalBottomSheet(
-                        context: context,
-                        isScrollControlled: true,
-                        backgroundColor: Colors.transparent,
-                        builder: (_) => const DevicePickerSheet(),
-                      );
-                    },
-                  ),
-                  // Like Heart Button
-                  IconButton(
-                    icon: Icon(
-                      currentSong.isLiked ? Icons.favorite : Icons.favorite_border,
-                      color: currentSong.isLiked ? AppColors.primary : AppColors.textMuted,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      libraryProvider.toggleLikeSong(currentSong);
-                    },
-                  ),
-                  // Play/Pause Button
-                  IconButton(
-                    icon: playerProvider.isLoading
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primary,
+                    const SizedBox(width: 10),
+                    // Title & Artist with Explicit badge
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            currentSong.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
                             ),
-                          )
-                        : Icon(
-                            playerProvider.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_fill,
-                            color: AppColors.textPrimary,
-                            size: 32,
                           ),
-                    onPressed: () {
-                      playerProvider.togglePlayPause();
-                    },
-                  ),
-                ],
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0.5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF1ED760),
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                                child: const Text(
+                                  'E',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 8,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 5),
+                              Expanded(
+                                child: Text(
+                                  currentSong.artist,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Connect Devices Icon
+                    IconButton(
+                      icon: const Icon(Icons.devices, color: Colors.white70, size: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          backgroundColor: Colors.transparent,
+                          builder: (_) => const DevicePickerSheet(),
+                        );
+                      },
+                    ),
+                    // Add / Plus Button
+                    IconButton(
+                      icon: Icon(
+                        currentSong.isLiked ? Icons.check_circle : Icons.add_circle_outline,
+                        color: currentSong.isLiked ? const Color(0xFF1ED760) : Colors.white70,
+                        size: 21,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        libraryProvider.toggleLikeSong(currentSong);
+                      },
+                    ),
+                    // Play/Pause Button
+                    IconButton(
+                      icon: playerProvider.isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Color(0xFF1ED760),
+                              ),
+                            )
+                          : Icon(
+                              playerProvider.isPlaying ? Icons.pause : Icons.play_arrow,
+                              color: Colors.white,
+                              size: 28,
+                            ),
+                      padding: const EdgeInsets.symmetric(horizontal: 6),
+                      constraints: const BoxConstraints(),
+                      onPressed: () {
+                        playerProvider.togglePlayPause();
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
             // Bottom Progress Bar
@@ -153,8 +190,8 @@ class MiniPlayer extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
               child: LinearProgressIndicator(
                 value: progress,
-                backgroundColor: Colors.white12,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                backgroundColor: Colors.white10,
+                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1ED760)),
                 minHeight: 2,
               ),
             ),

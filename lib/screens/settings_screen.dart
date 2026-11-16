@@ -4,7 +4,6 @@ import '../providers/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/equalizer_sheet.dart';
 import '../widgets/device_picker_sheet.dart';
-import 'admin_panel_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -94,17 +93,6 @@ class SettingsScreen extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 16),
-
-                  // Admin Panel Tile (Preserved)
-                  ListTile(
-                    contentPadding: EdgeInsets.zero,
-                    leading: const Icon(Icons.admin_panel_settings_outlined, color: Color(0xFF00FF87), size: 26),
-                    title: const Text('Admin Panel & Live Database', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                    subtitle: const Text('Secret Admin Controls & Firebase Sync', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (_) => const AdminPanelScreen()));
-                    },
-                  ),
 
                   // 10 REAL PERSISTED Settings Category Options!
                   _buildSettingTile(

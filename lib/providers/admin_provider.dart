@@ -117,9 +117,6 @@ class AdminProvider with ChangeNotifier {
   ];
   String _connectedDevice = 'Exotic Mobile (This Phone)';
 
-  // Secret Admin Authentication
-  static const String secretAdminPassword = r'9057578663@*RAZ';
-  int _bellClickCount = 0;
 
   // Getters
   String get appName => _appName;
@@ -150,7 +147,6 @@ class AdminProvider with ChangeNotifier {
   List<String> get homeSectionsList => _homeSectionsList;
   String get connectedDevice => _connectedDevice;
   int get totalStreamCount => _totalStreamCount;
-  int get bellClickCount => _bellClickCount;
 
   // Dynamic App Theme Color Controller
   Color _themeAccentColor = const Color(0xE6FFFFFF); // Default Frosted Silver Glass Accent
@@ -166,26 +162,6 @@ class AdminProvider with ChangeNotifier {
 
   AdminProvider() {
     _loadAdminSettings();
-  }
-
-  /// Register bell click for 9-tap secret admin trigger
-  int registerBellClick() {
-    _bellClickCount++;
-    notifyListeners();
-    return _bellClickCount;
-  }
-
-  void resetBellClick() {
-    _bellClickCount = 0;
-    notifyListeners();
-  }
-
-  bool verifyAdminPassword(String password) {
-    if (password == secretAdminPassword) {
-      resetBellClick();
-      return true;
-    }
-    return false;
   }
 
   Future<void> _loadAdminSettings() async {

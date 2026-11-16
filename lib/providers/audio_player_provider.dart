@@ -45,6 +45,9 @@ class AudioPlayerProvider with ChangeNotifier {
 
   AudioPlayerProvider() {
     _playlist = List.from(MusicData.allSongs);
+    if (_playlist.isNotEmpty) {
+      _currentIndex = 0;
+    }
     _initListeners();
   }
 

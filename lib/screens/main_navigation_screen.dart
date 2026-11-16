@@ -6,7 +6,8 @@ import '../widgets/mini_player.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
 import 'library_screen.dart';
-import 'settings_screen.dart';
+import 'premium_screen.dart';
+import 'create_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -22,13 +23,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     HomeScreen(),
     SearchScreen(),
     LibraryScreen(),
-    SettingsScreen(),
+    PremiumScreen(),
+    CreateScreen(),
   ];
 
   @override
   Widget build(BuildContext context) {
-    final adminProvider = Provider.of<AdminProvider>(context);
-
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
@@ -46,12 +46,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
               children: [
                 const MiniPlayer(),
                 Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface.withValues(alpha: 0.95),
-                    border: const Border(
-                      top: BorderSide(color: AppColors.glassBorder, width: 1),
-                    ),
-                  ),
+                  color: const Color(0xFF000000),
                   child: BottomNavigationBar(
                     currentIndex: _currentIndex,
                     onTap: (index) {
@@ -60,32 +55,37 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       });
                     },
                     backgroundColor: Colors.transparent,
-                    selectedItemColor: adminProvider.themeAccentColor,
-                    unselectedItemColor: AppColors.textMuted,
+                    selectedItemColor: Colors.white,
+                    unselectedItemColor: const Color(0xFFA7A7A7),
                     type: BottomNavigationBarType.fixed,
                     showUnselectedLabels: true,
-                    selectedLabelStyle: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
-                    unselectedLabelStyle: const TextStyle(fontSize: 11),
+                    selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
+                    unselectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.normal),
                     items: const [
                       BottomNavigationBarItem(
                         icon: Icon(Icons.home_outlined),
-                        activeIcon: Icon(Icons.home),
+                        activeIcon: Icon(Icons.home_filled),
                         label: 'Home',
                       ),
                       BottomNavigationBarItem(
                         icon: Icon(Icons.search),
-                        activeIcon: Icon(Icons.search, color: AppColors.secondary),
+                        activeIcon: Icon(Icons.search),
                         label: 'Search',
                       ),
                       BottomNavigationBarItem(
                         icon: Icon(Icons.library_music_outlined),
                         activeIcon: Icon(Icons.library_music),
-                        label: 'Library',
+                        label: 'Your Library',
                       ),
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.settings_outlined),
-                        activeIcon: Icon(Icons.settings),
-                        label: 'Settings',
+                        icon: Icon(Icons.workspace_premium_outlined),
+                        activeIcon: Icon(Icons.workspace_premium),
+                        label: 'Premium',
+                      ),
+                      BottomNavigationBarItem(
+                        icon: Icon(Icons.add_circle_outline),
+                        activeIcon: Icon(Icons.add_circle),
+                        label: 'Create',
                       ),
                     ],
                   ),

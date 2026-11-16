@@ -1,0 +1,842 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXOTIC MUSIC - Web Admin Control Center</title>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ================= AUTHENTICATION / LOCK OVERLAY ================= -->
+  <div id="authOverlay" class="auth-overlay">
+    <div class="auth-card">
+      <div class="auth-logo">
+        <i class="fa-solid fa-compact-disc"></i>
+      </div>
+      <h2>EXOTIC MUSIC ADMIN</h2>
+      <p>Enter Master Admin Password to access live Firebase & Google Drive engine controls.</p>
+
+      <form id="authForm" onsubmit="handleAuthSubmit(event)">
+        <div class="form-group" style="text-align: left;">
+          <label>Admin Password</label>
+          <div style="position: relative;">
+            <input type="password" id="authPassword" class="form-control" placeholder="••••••••••••••" required autofocus>
+            <button type="button" onclick="togglePasswordVisibility()" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer;">
+              <i id="eyeIcon" class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <p id="authError" style="color: var(--accent-red); font-size: 12px; margin-bottom: 14px; display: none; font-weight: 600;"></p>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          <i class="fa-solid fa-lock-open"></i> Unlock Control Center
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MAIN APP LAYOUT ================= -->
+  <div class="app-layout">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand-wrapper">
+          <div class="brand-icon">
+            <i class="fa-solid fa-bolt"></i>
+          </div>
+          <div class="brand-text">
+            <h1>EXOTIC</h1>
+            <span>ADMIN PANNEL</span>
+          </div>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a class="nav-item active" data-tab="dashboard">
+          <i class="fa-solid fa-chart-pie"></i>
+          <span>Dashboard & Analytics</span>
+        </a>
+        <a class="nav-item" data-tab="drive-engine">
+          <i class="fa-brands fa-google-drive"></i>
+          <span>Drive Engine Uploader</span>
+        </a>
+        <a class="nav-item" data-tab="songs">
+          <i class="fa-solid fa-music"></i>
+          <span>Songs Master Catalog</span>
+        </a>
+        <a class="nav-item" data-tab="artists">
+          <i class="fa-solid fa-users-viewfinder"></i>
+          <span>Artists Manager</span>
+        </a>
+        <a class="nav-item" data-tab="playlists">
+          <i class="fa-solid fa-layer-group"></i>
+          <span>Playlists & Albums</span>
+        </a>
+        <a class="nav-item" data-tab="home-config">
+          <i class="fa-solid fa-sliders"></i>
+          <span>Home Configurator</span>
+        </a>
+        <a class="nav-item" data-tab="settings">
+          <i class="fa-solid fa-gear"></i>
+          <span>Settings & Firebase</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="system-status-pill">
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span class="status-dot"></span> Firebase RTDB
+          </span>
+          <span id="sidebarStatusText" style="color: var(--accent-green); font-weight: 700;">Live</span>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="lockAdminPanel()">
+          <i class="fa-solid fa-lock"></i> Lock Panel
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN VIEW WRAPPER -->
+    <div class="main-wrapper">
+
+      <!-- TOP HEADER -->
+      <header class="top-header">
+        <div class="header-left">
+          <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <div>
+            <h2 id="pageTitle" class="page-title">Dashboard & Analytics</h2>
+          </div>
+        </div>
+
+        <div class="header-right">
+          <div id="syncBadge" class="sync-status-badge">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Firebase Synced</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="syncAllWithFirebase(true)" title="Force Pull & Sync Data">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+        </div>
+      </header>
+
+      <!-- CONTENT BODY -->
+      <main class="content-body">
+
+        <!-- ================= TAB 1: DASHBOARD ================= -->
+        <div id="tab-dashboard" class="tab-pane active">
+          
+          <!-- Top Stats Grid -->
+          <div class="grid-stats">
+            <div class="stat-card">
+              <div class="stat-info">
+                <p>Total App Songs</p>
+                <h3 id="statTotalSongs">0</h3>
+              </div>
+              <div class="stat-icon green">
+                <i class="fa-solid fa-headphones"></i>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <p>Registered Artists</p>
+                <h3 id="statTotalArtists">0</h3>
+              </div>
+              <div class="stat-icon purple">
+                <i class="fa-solid fa-microphone-lines"></i>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <p>Curated Playlists</p>
+                <h3 id="statTotalPlaylists">0</h3>
+              </div>
+              <div class="stat-icon cyan">
+                <i class="fa-solid fa-list-check"></i>
+              </div>
+            </div>
+
+            <div class="stat-card">
+              <div class="stat-info">
+                <p>Total App Streams</p>
+                <h3 id="statTotalStreams">142.8K</h3>
+              </div>
+              <div class="stat-icon yellow">
+                <i class="fa-solid fa-fire"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Actions & Global App Settings -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-satellite-dish" style="color: var(--accent-green);"></i> Live App Master Controls</h2>
+                <p>Real-time settings instantly broadcast to all Exotic mobile app users.</p>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveAppGlobalSettings()">
+                <i class="fa-solid fa-check"></i> Save Global Settings
+              </button>
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>App Name</label>
+                <input type="text" id="cfgAppName" class="form-control" value="EXOTIC MUSIC">
+              </div>
+
+              <div class="form-group">
+                <label>Maintenance Mode</label>
+                <select id="cfgMaintenance" class="form-control">
+                  <option value="false">Off (Normal Live Operations)</option>
+                  <option value="true">On (App Maintenance Screen)</option>
+                </select>
+              </div>
+
+              <div class="form-group">
+                <label>VIP Subscription Lock</label>
+                <select id="cfgVipRequired" class="form-control">
+                  <option value="false">Free Access (No Lock)</option>
+                  <option value="true">VIP Required</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 10px;">
+              <label>Global Announcement Broadcast Banner</label>
+              <div style="display: flex; gap: 12px;">
+                <input type="text" id="cfgAnnouncement" class="form-control" placeholder="Type banner message for all app users...">
+                <button class="btn btn-primary" onclick="broadcastAnnouncement()">
+                  <i class="fa-solid fa-bullhorn"></i> Broadcast
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick System Diagnostic -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <h2><i class="fa-solid fa-server" style="color: var(--accent-cyan);"></i> Cloud Infrastructure Status</h2>
+            </div>
+            <div class="form-grid-2">
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); padding: 16px;">
+                <h4 style="font-size: 14px; margin-bottom: 6px;"><i class="fa-solid fa-database" style="color: var(--accent-green);"></i> Firebase Realtime Database</h4>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">URL: <code id="dbUrlDisplay">https://exoticglobalmusic-default-rtdb.firebaseio.com</code></p>
+                <span class="badge badge-green"><i class="fa-solid fa-circle" style="font-size: 8px; margin-right: 4px;"></i> Connected REST API v3</span>
+              </div>
+              <div style="background: rgba(255,255,255,0.02); border: 1px solid var(--border-glass); border-radius: var(--radius-sm); padding: 16px;">
+                <h4 style="font-size: 14px; margin-bottom: 6px;"><i class="fa-brands fa-google-drive" style="color: var(--accent-cyan);"></i> Google Drive REST API Engine</h4>
+                <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">API Key: <code>AIzaSyAsnr...XxcwU</code></p>
+                <span class="badge badge-cyan"><i class="fa-solid fa-circle" style="font-size: 8px; margin-right: 4px;"></i> Direct Media Streaming Active</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 2: DRIVE ENGINE UPLOADER ================= -->
+        <div id="tab-drive-engine" class="tab-pane">
+
+          <!-- Section 1: Auto-Sync Drive Folder -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-brands fa-google-drive" style="color: var(--accent-green);"></i> Google Drive Folder Auto-Sync</h2>
+                <p>Enter any Google Drive folder URL or ID. The engine will instantly fetch all audio files using Google Drive API v3.</p>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Google Drive Folder Link / Folder ID</label>
+                <input type="text" id="driveFolderUrl" class="form-control" placeholder="https://drive.google.com/drive/folders/1aBcDeFgHiJkLmNoP...">
+              </div>
+              <div class="form-group">
+                <label>Default Cover Image URL for Imported Tracks</label>
+                <input type="url" id="driveFolderCover" class="form-control" placeholder="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=600">
+              </div>
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Artist Name</label>
+                <input type="text" id="driveFolderArtist" class="form-control" placeholder="The Weeknd / Arijit Singh">
+              </div>
+              <div class="form-group">
+                <label>Album / Collection Name</label>
+                <input type="text" id="driveFolderAlbum" class="form-control" placeholder="Starboy Remastered">
+              </div>
+              <div class="form-group">
+                <label>Genre</label>
+                <input type="text" id="driveFolderGenre" class="form-control" value="Pop">
+              </div>
+            </div>
+
+            <button class="btn btn-primary" id="btnFetchFolder" onclick="handleFetchDriveFolder()">
+              <i class="fa-solid fa-cloud-arrow-down"></i> Auto-Fetch All Songs From Google Drive Folder
+            </button>
+          </div>
+
+          <!-- Section 2: Single Drive Track Link Converter -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-link" style="color: var(--accent-cyan);"></i> Single Google Drive Track Converter</h2>
+                <p>Convert any Google Drive share link into high-speed direct streamable URL.</p>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Paste Google Drive Song URL</label>
+                <input type="url" id="singleDriveLink" class="form-control" placeholder="https://drive.google.com/file/d/1XyZ.../view?usp=sharing" oninput="handleSingleDriveConversion()">
+              </div>
+              <div class="form-group">
+                <label>Generated Direct Stream URL (API v3 Formula)</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="text" id="singleDirectUrl" class="form-control" placeholder="Direct playable stream URL will appear here..." readonly>
+                  <button class="btn btn-secondary" onclick="testPlayDirectUrl()">
+                    <i class="fa-solid fa-play"></i> Test
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-grid-3">
+              <div class="form-group">
+                <label>Song Title</label>
+                <input type="text" id="singleTrackTitle" class="form-control" placeholder="e.g. Blinding Lights">
+              </div>
+              <div class="form-group">
+                <label>Artist Name</label>
+                <input type="text" id="singleTrackArtist" class="form-control" placeholder="The Weeknd">
+              </div>
+              <div class="form-group">
+                <label>Album Name</label>
+                <input type="text" id="singleTrackAlbum" class="form-control" placeholder="After Hours">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Cover Image URL</label>
+                <input type="url" id="singleTrackCover" class="form-control" placeholder="https://images.unsplash.com/photo-...">
+              </div>
+              <div class="form-group">
+                <label>Genre</label>
+                <input type="text" id="singleTrackGenre" class="form-control" value="Pop">
+              </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="handleAddSingleTrackToCatalog()">
+              <i class="fa-solid fa-plus"></i> Save Track & Sync to Firebase
+            </button>
+          </div>
+
+          <!-- Section 3: Batch Detected Tracks Table -->
+          <div id="driveImportResultsPanel" class="glass-panel" style="display: none;">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-list-check" style="color: var(--accent-green);"></i> Detected Tracks Preview (<span id="detectedTracksCount">0</span>)</h2>
+                <p>Review detected audio files before committing to Firebase database.</p>
+              </div>
+              <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary btn-sm" onclick="clearImportedTracksPreview()">
+                  <i class="fa-solid fa-trash"></i> Clear Preview
+                </button>
+                <button class="btn btn-primary btn-sm" onclick="commitImportedTracksToFirebase()">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Commit ALL to Firebase
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Track Title</th>
+                    <th>Artist</th>
+                    <th>Album</th>
+                    <th>Genre</th>
+                    <th>Test Stream</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="detectedTracksTableBody">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 3: SONGS MASTER CATALOG ================= -->
+        <div id="tab-songs" class="tab-pane">
+
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-music" style="color: var(--accent-green);"></i> Songs Master Catalog</h2>
+                <p>Manage all songs currently in the Firebase Realtime Database.</p>
+              </div>
+              <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                <div class="search-box">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input type="text" id="searchSongsInput" class="form-control" placeholder="Search by title, artist, album..." oninput="renderSongsTable()">
+                </div>
+                <select id="filterGenreSelect" class="form-control" style="width: 140px;" onchange="renderSongsTable()">
+                  <option value="ALL">All Genres</option>
+                </select>
+                <button class="btn btn-primary" onclick="openAddSongModal()">
+                  <i class="fa-solid fa-plus"></i> Add New Song
+                </button>
+              </div>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Track</th>
+                    <th>Album</th>
+                    <th>Genre</th>
+                    <th>Duration</th>
+                    <th>Play</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="songsTableBody">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 4: ARTISTS MANAGER ================= -->
+        <div id="tab-artists" class="tab-pane">
+
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-users-viewfinder" style="color: var(--accent-purple);"></i> Registered Artists Directory</h2>
+                <p>Create and edit artists, banners, biographies, languages, and monthly listeners.</p>
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <div class="search-box">
+                  <i class="fa-solid fa-magnifying-glass"></i>
+                  <input type="text" id="searchArtistsInput" class="form-control" placeholder="Search artists..." oninput="renderArtistsGrid()">
+                </div>
+                <button class="btn btn-primary" onclick="openAddArtistModal()">
+                  <i class="fa-solid fa-user-plus"></i> Add Artist
+                </button>
+              </div>
+            </div>
+
+            <div id="artistsGrid" class="artists-grid">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 5: PLAYLISTS & ALBUMS ================= -->
+        <div id="tab-playlists" class="tab-pane">
+
+          <!-- Curated Playlists -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-list-ul" style="color: var(--accent-cyan);"></i> Curated Playlists</h2>
+                <p>Public playlists displayed on user home & library.</p>
+              </div>
+              <button class="btn btn-primary" onclick="openAddPlaylistModal()">
+                <i class="fa-solid fa-plus"></i> Create Playlist
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Playlist</th>
+                    <th>Genre Tag</th>
+                    <th>Songs Count</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="playlistsTableBody">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Podcasts & Shows -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-podcast" style="color: var(--accent-yellow);"></i> Podcasts & Audio Shows</h2>
+                <p>Manage talk shows and serialized audio episodes.</p>
+              </div>
+              <button class="btn btn-primary" onclick="openAddPodcastModal()">
+                <i class="fa-solid fa-plus"></i> Add Podcast
+              </button>
+            </div>
+
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Podcast Show</th>
+                    <th>Publisher</th>
+                    <th>Category</th>
+                    <th>Episodes Count</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="podcastsTableBody">
+                  <!-- Injected via JavaScript -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 6: HOME CONFIGURATOR ================= -->
+        <div id="tab-home-config" class="tab-pane">
+
+          <!-- Hero Carousel Banners -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-images" style="color: var(--accent-green);"></i> Top Hero Banners Carousel</h2>
+                <p>Manage the large header carousel banners visible to all app users.</p>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="openAddBannerModal()">
+                <i class="fa-solid fa-plus"></i> Add Banner
+              </button>
+            </div>
+
+            <div id="bannersGrid" class="banners-grid">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Home Screen Sections Order -->
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-layer-group" style="color: var(--accent-cyan);"></i> Home Sections Arrangement</h2>
+                <p>Control the titles and display order of horizontal feeds on the Home Screen.</p>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveHomeSectionsOrder()">
+                <i class="fa-solid fa-check"></i> Save Order
+              </button>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-bottom: 16px;">
+              <input type="text" id="newSectionTitleInput" class="form-control" placeholder="New Section Title (e.g. Trending Punjabi 2026)">
+              <button class="btn btn-secondary" onclick="handleAddSectionTitle()">
+                <i class="fa-solid fa-plus"></i> Add
+              </button>
+            </div>
+
+            <div id="sectionsListContainer" style="display: flex; flex-direction: column; gap: 8px;">
+              <!-- Injected via JavaScript -->
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= TAB 7: SETTINGS & FIREBASE ================= -->
+        <div id="tab-settings" class="tab-pane">
+
+          <div class="glass-panel">
+            <div class="panel-header">
+              <div>
+                <h2><i class="fa-solid fa-database" style="color: var(--accent-green);"></i> Firebase & Cloud Engine Configuration</h2>
+                <p>Configure backend API endpoints and credentials.</p>
+              </div>
+              <button class="btn btn-primary btn-sm" onclick="saveDatabaseConfig()">
+                <i class="fa-solid fa-floppy-disk"></i> Save Configuration
+              </button>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Firebase Realtime Database URL</label>
+                <input type="text" id="cfgDbUrl" class="form-control" value="https://exoticglobalmusic-default-rtdb.firebaseio.com">
+              </div>
+
+              <div class="form-group">
+                <label>Google Drive REST API Key</label>
+                <input type="text" id="cfgDriveApiKey" class="form-control" value="AIzaSyAsnrQhFjzUpBnQel1aCcFiWMebMkXxcwU">
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label>Firebase Project ID</label>
+                <input type="text" id="cfgProjectId" class="form-control" value="exoticglobalmusic">
+              </div>
+
+              <div class="form-group">
+                <label>Firebase Storage Bucket</label>
+                <input type="text" id="cfgStorageBucket" class="form-control" value="exoticglobalmusic.firebasestorage.app">
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 12px; margin-top: 14px;">
+              <button class="btn btn-secondary" onclick="testFirebaseConnection()">
+                <i class="fa-solid fa-network-wired"></i> Test Firebase Connection
+              </button>
+              <button class="btn btn-secondary" onclick="exportDatabaseBackup()">
+                <i class="fa-solid fa-download"></i> Export Full JSON Backup
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </main>
+
+    </div>
+
+  </div>
+
+  <!-- ================= PERSISTENT BOTTOM AUDIO PLAYER ================= -->
+  <div id="audioPlayerBar" class="audio-player-bar">
+    <div class="player-left">
+      <img id="playerCover" class="player-thumb" src="https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=200" alt="Cover">
+      <div class="player-meta">
+        <div id="playerTitle" class="player-title">No Track Selected</div>
+        <div id="playerArtist" class="player-artist">Exotic Player</div>
+      </div>
+    </div>
+
+    <div class="player-center">
+      <div class="player-controls-row">
+        <button class="play-toggle-btn" id="btnPlayPause" onclick="togglePlayPause()">
+          <i id="playPauseIcon" class="fa-solid fa-play"></i>
+        </button>
+      </div>
+      <div class="scrubber-container">
+        <span id="playerCurrentTime">0:00</span>
+        <input type="range" id="playerScrubber" class="range-scrubber" min="0" max="100" value="0" oninput="handleScrub(event)">
+        <span id="playerTotalDuration">0:00</span>
+      </div>
+    </div>
+
+    <div class="player-right">
+      <i class="fa-solid fa-volume-high" style="color: var(--text-muted); font-size: 14px;"></i>
+      <input type="range" id="playerVolume" class="volume-slider" min="0" max="1" step="0.05" value="1" oninput="handleVolume(event)">
+    </div>
+  </div>
+
+  <!-- Hidden native HTML5 Audio element -->
+  <audio id="nativeAudio"></audio>
+
+  <!-- ================= MODAL: ADD / EDIT SONG ================= -->
+  <div id="songModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="songModalTitle">Add New Track</h3>
+        <button class="modal-close-btn" onclick="closeModal('songModal')">&times;</button>
+      </div>
+      <form id="songForm" onsubmit="handleSaveSong(event)">
+        <div class="modal-body">
+          <input type="hidden" id="modalSongId">
+
+          <div class="form-group">
+            <label>Song Title *</label>
+            <input type="text" id="modalSongTitle" class="form-control" required placeholder="Starboy / Kesariya">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Artist Name *</label>
+              <input type="text" id="modalSongArtist" class="form-control" required placeholder="The Weeknd">
+            </div>
+            <div class="form-group">
+              <label>Album Name</label>
+              <input type="text" id="modalSongAlbum" class="form-control" placeholder="Starboy">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Genre</label>
+              <input type="text" id="modalSongGenre" class="form-control" value="Pop">
+            </div>
+            <div class="form-group">
+              <label>Duration (Seconds)</label>
+              <input type="number" id="modalSongDuration" class="form-control" value="210">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Audio Stream URL (Google Drive direct URL or MP3 link) *</label>
+            <input type="url" id="modalSongAudioUrl" class="form-control" required placeholder="https://www.googleapis.com/drive/v3/files/... or direct mp3">
+          </div>
+
+          <div class="form-group">
+            <label>Cover Art URL</label>
+            <input type="url" id="modalSongCoverUrl" class="form-control" placeholder="https://images.unsplash.com/...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('songModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Song</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT ARTIST ================= -->
+  <div id="artistModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="artistModalTitle">Add New Artist</h3>
+        <button class="modal-close-btn" onclick="closeModal('artistModal')">&times;</button>
+      </div>
+      <form id="artistForm" onsubmit="handleSaveArtist(event)">
+        <div class="modal-body">
+          <input type="hidden" id="modalArtistId">
+
+          <div class="form-group">
+            <label>Artist Name *</label>
+            <input type="text" id="modalArtistName" class="form-control" required placeholder="Arijit Singh">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Primary Language</label>
+              <input type="text" id="modalArtistLanguage" class="form-control" value="Hindi">
+            </div>
+            <div class="form-group">
+              <label>Artist Type</label>
+              <input type="text" id="modalArtistType" class="form-control" value="Playback Singer">
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Genre</label>
+              <input type="text" id="modalArtistGenre" class="form-control" value="Bollywood">
+            </div>
+            <div class="form-group">
+              <label>Monthly Listeners</label>
+              <input type="number" id="modalArtistListeners" class="form-control" value="45000000">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Profile Picture URL</label>
+            <input type="url" id="modalArtistImage" class="form-control" placeholder="https://images.unsplash.com/...">
+          </div>
+
+          <div class="form-group">
+            <label>Header Banner URL</label>
+            <input type="url" id="modalArtistBanner" class="form-control" placeholder="https://images.unsplash.com/...">
+          </div>
+
+          <div class="form-group">
+            <label>Biography</label>
+            <textarea id="modalArtistBio" class="form-control" placeholder="Short artist bio..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('artistModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Artist</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD / EDIT PLAYLIST ================= -->
+  <div id="playlistModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="playlistModalTitle">Create Curated Playlist</h3>
+        <button class="modal-close-btn" onclick="closeModal('playlistModal')">&times;</button>
+      </div>
+      <form id="playlistForm" onsubmit="handleSavePlaylist(event)">
+        <div class="modal-body">
+          <input type="hidden" id="modalPlaylistId">
+
+          <div class="form-group">
+            <label>Playlist Title *</label>
+            <input type="text" id="modalPlaylistTitle" class="form-control" required placeholder="Top Bollywood Romantic 2026">
+          </div>
+
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label>Genre Tag</label>
+              <input type="text" id="modalPlaylistGenreTag" class="form-control" value="Bollywood">
+            </div>
+            <div class="form-group">
+              <label>Cover Image URL</label>
+              <input type="url" id="modalPlaylistCover" class="form-control" placeholder="https://images.unsplash.com/...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Description</label>
+            <textarea id="modalPlaylistDesc" class="form-control" placeholder="Description of this playlist..."></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('playlistModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Playlist</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ================= MODAL: ADD BANNER ================= -->
+  <div id="bannerModal" class="modal-overlay">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Add Hero Carousel Banner</h3>
+        <button class="modal-close-btn" onclick="closeModal('bannerModal')">&times;</button>
+      </div>
+      <form onsubmit="handleSaveBanner(event)">
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Banner Title *</label>
+            <input type="text" id="modalBannerTitle" class="form-control" required placeholder="STARBOY REMASTERED">
+          </div>
+          <div class="form-group">
+            <label>Banner Subtitle</label>
+            <input type="text" id="modalBannerSubtitle" class="form-control" placeholder="Stream the full album in High-Definition Lossless Audio">
+          </div>
+          <div class="form-group">
+            <label>Banner Image URL *</label>
+            <input type="url" id="modalBannerImage" class="form-control" required placeholder="https://images.unsplash.com/...">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('bannerModal')">Cancel</button>
+          <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Save Banner</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOAST ALERTS CONTAINER -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- APP LOGIC SCRIPT -->
+  <script src="app.js"></script>
+</body>
+</html>
