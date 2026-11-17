@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../data/music_data.dart';
 import '../models/song_model.dart';
 import '../providers/audio_player_provider.dart';
 import '../providers/music_library_provider.dart';
 import '../services/saavn_api_service.dart';
+import '../services/yt_music_service.dart';
 import '../theme/app_colors.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -20,22 +22,19 @@ class _SearchScreenState extends State<SearchScreen> {
   Timer? _debounceTimer;
 
   bool _isLoading = false;
-  List<Song> _saavnResults = [];
+  List<Song> _searchResults = [];
   String _activeGenre = 'All';
 
-  // Popular Trending Search Suggestions
-  final List<String> _trendingSuggestions = [
-    'Karan Aujla',
-    'Diljit Dosanjh',
-    'Sidhu Moose Wala',
-    'Arijit Singh',
-    'Winning Speech',
-    'Tauba Tauba',
-    'Shubh',
-    'AP Dhillon',
-    'Top 50 India',
-    'The Weeknd',
-  ];
+  List<String> _recentSearches = [];
+  List<String> _favoriteArtists = [];
+
+  static const String _prefRecentSearchesKey = 'user_recent_searches_list';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRecentSearchesAndTaste();
+  }
 
   @override
   void dispose() {
@@ -44,12 +43,71 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
+  Future<void> _loadRecentSearchesAndTaste() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final recents = prefs.getStringList(_prefRecentSearchesKey) ?? [];
+      final preferredArtists = prefs.getStringList('user_preferred_artists') ?? [];
+
+      if (mounted) {
+        setState(() {
+          _recentSearches = recents;
+          _favoriteArtists = preferredArtists;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading search history: $e');
+    }
+  }
+
+  Future<void> _saveRecentSearch(String query) async {
+    final clean = query.trim();
+    if (clean.isEmpty) return;
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      _recentSearches.removeWhere((item) => item.toLowerCase() == clean.toLowerCase());
+      _recentSearches.insert(0, clean);
+      if (_recentSearches.length > 15) {
+        _recentSearches = _recentSearches.sublist(0, 15);
+      }
+      await prefs.setStringList(_prefRecentSearchesKey, _recentSearches);
+      if (mounted) setState(() {});
+    } catch (e) {
+      debugPrint('Error saving search history: $e');
+    }
+  }
+
+  Future<void> _removeRecentSearch(String query) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _recentSearches.remove(query);
+      });
+      await prefs.setStringList(_prefRecentSearchesKey, _recentSearches);
+    } catch (e) {
+      debugPrint('Error removing search item: $e');
+    }
+  }
+
+  Future<void> _clearAllRecentSearches() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      setState(() {
+        _recentSearches.clear();
+      });
+      await prefs.remove(_prefRecentSearchesKey);
+    } catch (e) {
+      debugPrint('Error clearing search history: $e');
+    }
+  }
+
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
     if (query.trim().isEmpty) {
       setState(() {
         _isLoading = false;
-        _saavnResults = [];
+        _searchResults = [];
       });
       return;
     }
@@ -60,13 +118,48 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _performSearch(String query) async {
+    final cleanQuery = query.trim();
+    if (cleanQuery.isEmpty) return;
+
+    _saveRecentSearch(cleanQuery);
     setState(() => _isLoading = true);
-    final results = await SaavnApiService.searchSongs(query, limit: 25);
-    if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-      _saavnResults = results;
-    });
+
+    try {
+      // 1. Search JioSaavn Primary Engine
+      final saavnFuture = SaavnApiService.searchSongs(cleanQuery, limit: 20);
+      // 2. Search YouTube Secondary/Fallback Engine in Parallel
+      final ytFuture = YtMusicService.searchSongsOnly(cleanQuery, limit: 10);
+
+      final saavnSongs = await saavnFuture;
+      final ytSongs = await ytFuture;
+
+      // 3. Merge Non-Duplicates (Blueprint Rule 4: Match title & artist)
+      final Set<String> existingSignatures = {};
+      final List<Song> combined = [];
+
+      for (final song in saavnSongs) {
+        final sig = '${song.title.toLowerCase().trim()}|${song.artist.toLowerCase().trim()}';
+        existingSignatures.add(sig);
+        combined.add(song);
+      }
+
+      for (final ytSong in ytSongs) {
+        final sig = '${ytSong.title.toLowerCase().trim()}|${ytSong.artist.toLowerCase().trim()}';
+        if (!existingSignatures.contains(sig)) {
+          existingSignatures.add(sig);
+          combined.add(ytSong);
+        }
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _searchResults = combined;
+      });
+    } catch (e) {
+      debugPrint('Error during hybrid music search: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   void _searchByGenre(String genre) {
@@ -75,7 +168,7 @@ class _SearchScreenState extends State<SearchScreen> {
       _searchController.text = genre == 'All' ? '' : genre;
     });
     if (genre == 'All') {
-      setState(() => _saavnResults = []);
+      setState(() => _searchResults = []);
     } else {
       _performSearch(genre);
     }
@@ -176,9 +269,9 @@ class _SearchScreenState extends State<SearchScreen> {
                           valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                         ),
                       )
-                    : _searchController.text.trim().isNotEmpty || _saavnResults.isNotEmpty
-                        ? _buildSearchResultsList(_saavnResults, playerProvider, libraryProvider)
-                        : _buildBrowseAndTrendingView(),
+                    : _searchController.text.trim().isNotEmpty || _searchResults.isNotEmpty
+                        ? _buildSearchResultsList(_searchResults, playerProvider, libraryProvider)
+                        : _buildRecentAndFavoritesView(),
               ),
             ],
           ),
@@ -187,40 +280,82 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  Widget _buildBrowseAndTrendingView() {
+  Widget _buildRecentAndFavoritesView() {
     return ListView(
       physics: const BouncingScrollPhysics(),
       children: [
-        // Trending Searches
-        const Text(
-          'Trending Searches',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textPrimary,
+        // 1. RECENT SEARCHES (Exact User History with Clear & Delete)
+        if (_recentSearches.isNotEmpty) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Recent searches',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+              TextButton(
+                onPressed: _clearAllRecentSearches,
+                child: const Text('Clear all', style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.bold)),
+              ),
+            ],
           ),
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: _trendingSuggestions.map((query) {
-            return ActionChip(
-              backgroundColor: const Color(0xFF22242B),
-              side: const BorderSide(color: Colors.white12),
-              avatar: const Icon(Icons.trending_up, color: AppColors.primary, size: 16),
-              label: Text(query, style: const TextStyle(color: Colors.white, fontSize: 12)),
-              onPressed: () {
+          const SizedBox(height: 4),
+          ..._recentSearches.take(8).map((query) {
+            return ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: const Icon(Icons.history, color: AppColors.textSecondary, size: 20),
+              title: Text(
+                query,
+                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+              ),
+              trailing: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white38, size: 18),
+                onPressed: () => _removeRecentSearch(query),
+              ),
+              onTap: () {
                 _searchController.text = query;
                 _performSearch(query);
               },
             );
-          }).toList(),
-        ),
+          }),
+          const SizedBox(height: 20),
+        ],
 
-        const SizedBox(height: 24),
+        // 2. YOUR FAVORITES (Based on User Taste & Preferred Artists)
+        if (_favoriteArtists.isNotEmpty) ...[
+          const Text(
+            'Your favorites',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _favoriteArtists.map((artistName) {
+              return ActionChip(
+                backgroundColor: const Color(0xFF22242B),
+                side: const BorderSide(color: Colors.white12),
+                avatar: const Icon(Icons.favorite, color: AppColors.primary, size: 15),
+                label: Text(artistName, style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
+                onPressed: () {
+                  _searchController.text = artistName;
+                  _performSearch(artistName);
+                },
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 24),
+        ],
 
-        // Browse All Categories Grid
+        // 3. BROWSE ALL GENRES GRID
         const Text(
           'Browse all',
           style: TextStyle(
@@ -258,15 +393,26 @@ class _SearchScreenState extends State<SearchScreen> {
                     Text(
                       name,
                       style: const TextStyle(
+                        color: Colors.white,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
                       ),
                     ),
-                    const Positioned(
+                    Positioned(
                       right: -10,
                       bottom: -10,
-                      child: Icon(Icons.music_note, color: Colors.white24, size: 50),
+                      child: Transform.rotate(
+                        angle: 0.3,
+                        child: Container(
+                          width: 50,
+                          height: 50,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Icon(Icons.music_note, color: Colors.white, size: 30),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -285,22 +431,10 @@ class _SearchScreenState extends State<SearchScreen> {
     MusicLibraryProvider libraryProvider,
   ) {
     if (results.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.music_off, color: Colors.white38, size: 48),
-            const SizedBox(height: 12),
-            Text(
-              'No results found for "${_searchController.text.trim()}"',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 15),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Try searching with a different song or artist name',
-              style: TextStyle(color: Colors.white38, fontSize: 12),
-            ),
-          ],
+      return const Center(
+        child: Text(
+          'No tracks found. Try another query.',
+          style: TextStyle(color: AppColors.textSecondary),
         ),
       );
     }
@@ -318,14 +452,14 @@ class _SearchScreenState extends State<SearchScreen> {
             borderRadius: BorderRadius.circular(6),
             child: Image.network(
               song.coverUrl,
-              width: 48,
-              height: 48,
+              width: 50,
+              height: 50,
               fit: BoxFit.cover,
               errorBuilder: (_, __, ___) => Container(
-                width: 48,
-                height: 48,
-                color: const Color(0xFF282828),
-                child: const Icon(Icons.music_note, color: Colors.white54),
+                width: 50,
+                height: 50,
+                color: AppColors.surfaceLight,
+                child: const Icon(Icons.music_note, color: AppColors.textMuted),
               ),
             ),
           ),
@@ -344,33 +478,15 @@ class _SearchScreenState extends State<SearchScreen> {
             overflow: TextOverflow.ellipsis,
             style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
-          trailing: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // 320kbps Lossless Badge
-              Container(
-                margin: const EdgeInsets.only(right: 4),
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(0.18),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: const Text(
-                  '320k',
-                  style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold),
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  libraryProvider.isLiked(song.id) ? Icons.favorite : Icons.favorite_border,
-                  color: libraryProvider.isLiked(song.id) ? AppColors.primary : AppColors.textMuted,
-                  size: 20,
-                ),
-                onPressed: () {
-                  libraryProvider.toggleLikeSong(song);
-                },
-              ),
-            ],
+          trailing: IconButton(
+            icon: Icon(
+              libraryProvider.isLiked(song.id) ? Icons.favorite : Icons.favorite_border,
+              color: libraryProvider.isLiked(song.id) ? AppColors.primary : AppColors.textMuted,
+              size: 20,
+            ),
+            onPressed: () {
+              libraryProvider.toggleLikeSong(song);
+            },
           ),
           onTap: () {
             libraryProvider.logRecentlyPlayed(song);

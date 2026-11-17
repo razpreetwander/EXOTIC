@@ -131,8 +131,8 @@ class _DevicePickerSheetState extends State<DevicePickerSheet> {
                           const SizedBox(height: 4),
                           Text(
                             isPlaying
-                                ? 'Currently Playing • Lossless 320kbps'
-                                : 'Ready to play • Lossless 320kbps',
+                                ? 'Currently Playing'
+                                : 'Ready to play',
                             style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
                           ),
                         ],
@@ -226,7 +226,7 @@ class _DevicePickerSheetState extends State<DevicePickerSheet> {
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'When you pair Bluetooth earbuds or connect your car, Android automatically routes the lossless 320kbps stream directly.',
+                      'When you pair Bluetooth earbuds or connect your car, Android automatically routes the audio stream directly.',
                       style: TextStyle(color: Colors.white70, fontSize: 11, height: 1.4),
                     ),
                   ),

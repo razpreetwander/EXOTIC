@@ -56,6 +56,38 @@ class Song {
     };
   }
 
+  Song copyWith({
+    String? id,
+    String? title,
+    String? artist,
+    String? album,
+    Duration? duration,
+    String? audioUrl,
+    String? coverUrl,
+    List<LyricLine>? lyrics,
+    String? genre,
+    bool? isLiked,
+    String? year,
+    String? language,
+    bool? isIncomplete,
+  }) {
+    return Song(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      artist: artist ?? this.artist,
+      album: album ?? this.album,
+      duration: duration ?? this.duration,
+      audioUrl: audioUrl ?? this.audioUrl,
+      coverUrl: coverUrl ?? this.coverUrl,
+      lyrics: lyrics ?? this.lyrics,
+      genre: genre ?? this.genre,
+      isLiked: isLiked ?? this.isLiked,
+      year: year ?? this.year,
+      language: language ?? this.language,
+      isIncomplete: isIncomplete ?? this.isIncomplete,
+    );
+  }
+
   factory Song.fromJson(Map<String, dynamic> json) {
     return Song(
       id: json['id'] ?? '',

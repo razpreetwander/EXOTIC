@@ -6,6 +6,7 @@ import '../models/song_model.dart';
 import '../data/music_data.dart';
 import '../services/drive_engine_service.dart';
 import '../services/saavn_api_service.dart';
+import '../services/yt_music_service.dart';
 
 enum LoopState { off, loopAll, loopOne }
 
@@ -103,7 +104,22 @@ class AudioPlayerProvider with ChangeNotifier {
     }
 
     Song playableSong = song;
-    if (playableSong.isIncomplete || playableSong.audioUrl.isEmpty) {
+
+    // 1. YouTube Direct Audio Resolution
+    if (playableSong.id.startsWith('yt_')) {
+      _isLoading = true;
+      notifyListeners();
+      try {
+        final ytStream = await YtMusicService.getDirectAudioStreamUrl(playableSong.id);
+        if (ytStream.isNotEmpty) {
+          playableSong = playableSong.copyWith(audioUrl: ytStream);
+        }
+      } catch (e) {
+        debugPrint('Error resolving YouTube direct stream: $e');
+      }
+    }
+    // 2. JioSaavn Stream Resolution
+    else if (playableSong.isIncomplete || playableSong.audioUrl.isEmpty) {
       _isLoading = true;
       notifyListeners();
       try {
@@ -113,6 +129,18 @@ class AudioPlayerProvider with ChangeNotifier {
         }
       } catch (e) {
         debugPrint('Error resolving JioSaavn song stream: $e');
+      }
+    }
+
+    // 3. Fallback: If song is missing audio URL and not local, resolve via YouTube Engine
+    if (playableSong.audioUrl.isEmpty && !playableSong.audioUrl.startsWith('/')) {
+      try {
+        final fallbackStream = await YtMusicService.resolveFallbackAudio(playableSong.title, playableSong.artist);
+        if (fallbackStream.isNotEmpty) {
+          playableSong = playableSong.copyWith(audioUrl: fallbackStream);
+        }
+      } catch (e) {
+        debugPrint('Fallback YouTube resolution error: $e');
       }
     }
 
@@ -198,14 +226,29 @@ class AudioPlayerProvider with ChangeNotifier {
     notifyListeners();
 
     String playUrl = url.trim();
-    if (playUrl.isEmpty) {
-      playUrl = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+
+    // 1. Local Device File Playback
+    if (playUrl.startsWith('/') || playUrl.startsWith('file://')) {
+      final cleanPath = playUrl.replaceFirst('file://', '');
+      try {
+        await _audioPlayer.stop();
+        await _audioPlayer.play(DeviceFileSource(cleanPath));
+        _isLoading = false;
+        _isPlaying = true;
+        _startSpectrumAnimation();
+        notifyListeners();
+        return;
+      } catch (e) {
+        debugPrint('DeviceFileSource error ($cleanPath): $e');
+      }
     }
 
+    // 2. Network Playback via Candidate URLs
     bool success = false;
     final candidates = DriveEngineService.getStreamUrlCandidates(playUrl);
 
     for (final candidateUrl in candidates) {
+      if (candidateUrl.trim().isEmpty) continue;
       try {
         await _audioPlayer.stop();
         await _audioPlayer.play(UrlSource(candidateUrl));
@@ -217,7 +260,22 @@ class AudioPlayerProvider with ChangeNotifier {
       }
     }
 
-    // Attempt streaming fallback if candidates failed
+    // 3. YouTube Fallback Resolution if candidates failed
+    if (!success && currentSong != null) {
+      try {
+        final ytStream = await YtMusicService.resolveFallbackAudio(currentSong!.title, currentSong!.artist);
+        if (ytStream.isNotEmpty) {
+          await _audioPlayer.stop();
+          await _audioPlayer.play(UrlSource(ytStream));
+          success = true;
+          debugPrint("Successfully recovered with YouTube audio fallback: ${currentSong!.title}");
+        }
+      } catch (err) {
+        debugPrint("YouTube fallback error: $err");
+      }
+    }
+
+    // 4. Final safety fallback
     if (!success) {
       try {
         await _audioPlayer.play(UrlSource('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'));

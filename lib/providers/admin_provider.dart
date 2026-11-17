@@ -77,7 +77,7 @@ class AdminProvider with ChangeNotifier {
   List<Map<String, String>> _heroBanners = [
     {
       'title': 'STARBOY REMASTERED',
-      'subtitle': 'Stream the full album in High-Definition Lossless Audio',
+      'subtitle': 'Stream the full album on Exotic Music',
       'imageUrl': 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1200',
     },
     {
@@ -110,8 +110,6 @@ class AdminProvider with ChangeNotifier {
     'Your top artists',
     'Hit Lists for you',
     'Featured Releases',
-    'Best of Punjabi',
-    'Fresh Punjabi',
     'Charts & Trends',
     'Top Music',
   ];

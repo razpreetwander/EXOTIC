@@ -18,6 +18,7 @@ class NowPlayingScreen extends StatefulWidget {
 class _NowPlayingScreenState extends State<NowPlayingScreen> {
   int _selectedTab = 0; // 0 = Cover, 1 = Lyrics
   final ScrollController _lyricsScrollController = ScrollController();
+  int _lastActiveLyricIndex = -1;
 
   @override
   void dispose() {
@@ -419,8 +420,8 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
               style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 6),
-            Text(
-              'Enjoy the pure lossless music streaming',
+            const Text(
+              'Enjoy your favorite music',
               style: TextStyle(color: AppColors.textMuted, fontSize: 12),
             ),
           ],
@@ -428,21 +429,23 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
       );
     }
 
-    // Auto-scroll to current active lyric line
+    // Auto-scroll to current active lyric line (centered in viewport)
     final currentLineIndex = lyrics.indexWhere((line) {
       final idx = lyrics.indexOf(line);
       return provider.position >= line.timestamp &&
           (idx == lyrics.length - 1 || provider.position < lyrics[idx + 1].timestamp);
     });
 
-    if (currentLineIndex != -1 && _lyricsScrollController.hasClients) {
+    if (currentLineIndex != -1 && currentLineIndex != _lastActiveLyricIndex && _lyricsScrollController.hasClients) {
+      _lastActiveLyricIndex = currentLineIndex;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_lyricsScrollController.hasClients) {
-          final targetOffset = (currentLineIndex * 54.0) - 120.0;
+          final viewportHeight = _lyricsScrollController.position.viewportDimension;
+          final targetOffset = (currentLineIndex * 60.0) - (viewportHeight / 2) + 30.0;
           final clamped = targetOffset.clamp(0.0, _lyricsScrollController.position.maxScrollExtent);
           _lyricsScrollController.animateTo(
             clamped,
-            duration: const Duration(milliseconds: 300),
+            duration: const Duration(milliseconds: 350),
             curve: Curves.easeOutCubic,
           );
         }

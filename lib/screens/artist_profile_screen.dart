@@ -235,7 +235,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                         ),
                         const SizedBox(height: 6),
                         Text(
-                          '${_formatNumber(_followerCount)} Monthly Listeners • 320k Lossless',
+                          '${_formatNumber(_followerCount)} Monthly Listeners',
                           style: const TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w500),
                         ),
                       ],
@@ -405,26 +405,11 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                           fontSize: 14,
                         ),
                       ),
-                      subtitle: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2A2A2A),
-                              borderRadius: BorderRadius.circular(3),
-                            ),
-                            child: const Text('320k', style: TextStyle(color: AppColors.primary, fontSize: 9, fontWeight: FontWeight.bold)),
-                          ),
-                          const SizedBox(width: 6),
-                          Expanded(
-                            child: Text(
-                              song.album,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
-                            ),
-                          ),
-                        ],
+                      subtitle: Text(
+                        song.album,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
                       ),
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -590,7 +575,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                             ),
                             const SizedBox(height: 2),
                             const Text(
-                              'Single • 320k',
+                              'Single',
                               style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w600),
                             ),
                           ],
@@ -714,7 +699,7 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    _bio.isNotEmpty ? _bio : '${artist.name} is one of the premier verified trending music creators streaming exclusively in lossless 320kbps on Exotic Music.',
+                    _bio.isNotEmpty ? _bio : '${artist.name} is one of the premier verified trending music creators on Exotic Music.',
                     style: const TextStyle(color: Colors.white70, fontSize: 13, height: 1.5),
                   ),
                   const SizedBox(height: 16),
@@ -735,10 +720,10 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: const [
                           Text(
-                            'Lossless 320k',
+                            'Verified',
                             style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 18),
                           ),
-                          Text('Audio Quality', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
+                          Text('Artist Status', style: TextStyle(color: AppColors.textMuted, fontSize: 11)),
                         ],
                       ),
                     ],

@@ -9,6 +9,7 @@ import '../models/album_model.dart';
 import '../providers/audio_player_provider.dart';
 import '../providers/music_library_provider.dart';
 import '../providers/admin_provider.dart';
+import '../providers/settings_provider.dart';
 import '../services/saavn_api_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_drawer.dart';
@@ -35,6 +36,9 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Playlist> _saavnPlaylists = [];
   List<Artist> _userFavoriteArtists = [];
   bool _isFetchingSaavn = false;
+  String _lang1Name = 'Hindi';
+  String _lang2Name = 'Punjabi';
+  String _primaryArtistName = 'Artist';
 
   static final Map<String, String> _artistImages = {
     'Karan Aujla': 'https://c.saavncdn.com/artists/Karan_Aujla_005_20260925061936_500x500.jpg',
@@ -80,37 +84,44 @@ class _HomeScreenState extends State<HomeScreen> {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final preferredArtists = prefs.getStringList('user_preferred_artists') ?? ['Karan Aujla', 'Diljit Dosanjh', 'Arijit Singh'];
-      final preferredLanguages = prefs.getStringList('user_preferred_languages') ?? ['Punjabi', 'Hindi', 'English'];
-      final primaryArtist = preferredArtists.isNotEmpty ? preferredArtists.first : 'Karan Aujla';
+      final preferredArtists = prefs.getStringList('user_preferred_artists') ?? [];
+      final preferredLanguages = prefs.getStringList('user_preferred_languages') ?? [];
+
+      final primaryArtist = preferredArtists.isNotEmpty ? preferredArtists.first : 'Arijit Singh';
+      final lang1 = preferredLanguages.isNotEmpty ? preferredLanguages[0] : 'Hindi';
+      final lang2 = preferredLanguages.length > 1
+          ? preferredLanguages[1]
+          : (preferredLanguages.isNotEmpty ? preferredLanguages[0] : 'Punjabi');
+
+      _lang1Name = lang1;
+      _lang2Name = lang2;
+      _primaryArtistName = primaryArtist;
 
       // 1. Build favorite artists models from user's selected preferences
       final List<Artist> favArtists = preferredArtists.map((name) {
-        final img = _artistImages[name] ?? 'https://c.saavncdn.com/artists/Karan_Aujla_005_20260925061936_500x500.jpg';
+        final img = _artistImages[name] ?? 'https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_500x500.jpg';
         return Artist(
           id: 'artist_${name.toLowerCase().replaceAll(' ', '_')}',
           name: name,
           imageUrl: img,
           bio: '$name verified artist discography on EXOTIC MUSIC.',
-          language: preferredLanguages.isNotEmpty ? preferredLanguages.first : 'Punjabi',
+          language: preferredLanguages.isNotEmpty ? preferredLanguages.first : 'Hindi',
           artistType: 'Artist',
           genre: 'Top Hits',
           monthlyListeners: 18500000,
         );
       }).toList();
 
-      // 2. Fetch 8 Quick Picks based on user's primary artist
+      // 2. Fetch 8 Quick Picks based strictly on user's selected primary artist
       final quickSongs = await SaavnApiService.searchSongs(primaryArtist, limit: 8);
 
       // 3. Fetch Trending 50 India
       final trending = await SaavnApiService.searchSongs('Trending Top 50 India', limit: 12);
 
       // 4. Fetch First Preferred Language Hits (Famous official songs)
-      final lang1 = preferredLanguages.isNotEmpty ? preferredLanguages[0] : 'Punjabi';
       final lang1Songs = await SaavnApiService.getFamousSongsForLanguage(lang1, limit: 12);
 
       // 5. Fetch Second Preferred Language Hits (Famous official songs)
-      final lang2 = preferredLanguages.length > 1 ? preferredLanguages[1] : 'Hindi';
       final lang2Songs = await SaavnApiService.getFamousSongsForLanguage(lang2, limit: 12);
 
       // 6. Fetch Real JioSaavn Playlists
@@ -155,6 +166,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final playerProvider = Provider.of<AudioPlayerProvider>(context);
     final libraryProvider = Provider.of<MusicLibraryProvider>(context);
     final adminProvider = Provider.of<AdminProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
 
     final allAppSongs = adminProvider.allAppSongs;
     final playlists = adminProvider.playlistsCatalog;
@@ -172,16 +184,16 @@ class _HomeScreenState extends State<HomeScreen> {
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
               child: Row(
                 children: [
-                  // Circular Profile Avatar with 'P' (Exact Spotify layout from video)
+                  // Circular Profile Avatar with user initial
                   Builder(
                     builder: (btnCtx) => GestureDetector(
                       onTap: () => Scaffold.of(btnCtx).openDrawer(),
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 17,
                         backgroundColor: AppColors.primary,
                         child: Text(
-                          'P',
-                          style: TextStyle(
+                          settings.username.isNotEmpty ? settings.username[0].toUpperCase() : 'U',
+                          style: const TextStyle(
                             color: Colors.black,
                             fontWeight: FontWeight.w900,
                             fontSize: 16,
@@ -445,7 +457,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: const Text(
-                                'FEATURED PLAYLIST • 320K LOSSLESS',
+                                'FEATURED PLAYLIST',
                                 style: TextStyle(
                                   color: Colors.black,
                                   fontWeight: FontWeight.w900,
@@ -619,9 +631,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
 
-      // Live Punjabi Hits Carousel
+      // Live First Preferred Language Hits Carousel
       if (_saavnPunjabiHits.isNotEmpty) ...[
-        _buildSectionTitle('Popular Punjabi Hits'),
+        _buildSectionTitle('Top $_lang1Name Hits'),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 220,
@@ -633,7 +645,7 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 final s = _saavnPunjabiHits[index];
                 return _buildRecommendedCard(
-                  type: 'PUNJABI',
+                  type: _lang1Name.toUpperCase(),
                   title: s.title,
                   artist: s.artist,
                   imageUrl: s.coverUrl,
@@ -645,9 +657,35 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
 
-      // Live Bollywood Melodies Carousel
-      if (_saavnBollywoodHits.isNotEmpty) ...[
-        _buildSectionTitle('Soulful Bollywood Melodies'),
+      // Best of User Selected Primary Artist
+      if (_saavnQuickPicks.isNotEmpty && _primaryArtistName.isNotEmpty) ...[
+        _buildSectionTitle('Best of $_primaryArtistName'),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _saavnQuickPicks.length,
+              itemBuilder: (context, index) {
+                final s = _saavnQuickPicks[index];
+                return _buildRecommendedCard(
+                  type: 'FOR YOU',
+                  title: s.title,
+                  artist: s.artist,
+                  imageUrl: s.coverUrl,
+                  onTap: () => player.playSong(s, contextPlaylist: _saavnQuickPicks),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+
+      // Live Second Preferred Language Hits Carousel
+      if (_saavnBollywoodHits.isNotEmpty && _lang2Name != _lang1Name) ...[
+        _buildSectionTitle('Top $_lang2Name Hits'),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 220,
@@ -659,7 +697,7 @@ class _HomeScreenState extends State<HomeScreen> {
               itemBuilder: (context, index) {
                 final s = _saavnBollywoodHits[index];
                 return _buildRecommendedCard(
-                  type: 'BOLLYWOOD',
+                  type: _lang2Name.toUpperCase(),
                   title: s.title,
                   artist: s.artist,
                   imageUrl: s.coverUrl,
@@ -752,7 +790,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               final song = _saavnTrendingHits[index];
               return _buildRecommendedCard(
-                type: '320K LOSSLESS',
+                type: 'HOT TRACK',
                 title: song.title,
                 artist: song.artist,
                 imageUrl: song.coverUrl,
@@ -775,10 +813,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _buildLatestReleaseCard(
                         title: s.artist,
-                        subtitle: '${s.title} • Lossless Audio',
+                        subtitle: s.title,
                         trackInfo: 'Single • ${s.album}',
                         imageUrl: s.coverUrl,
-                        previewText: 'Play 320k Track',
+                        previewText: 'Play Track',
                         onPreview: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
                         onPlay: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
                       ),

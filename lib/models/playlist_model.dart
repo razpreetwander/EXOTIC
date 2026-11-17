@@ -35,7 +35,7 @@ class Playlist {
     return Playlist(
       id: json['id']?.toString() ?? '',
       title: Song.clean(json['name'] ?? json['title']),
-      description: Song.clean(json['description'] ?? 'JioSaavn Official Playlist • 320kbps Lossless'),
+      description: Song.clean(json['description'] ?? 'Official Curated Playlist'),
       coverUrl: cover.isNotEmpty ? cover : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600',
       genreTag: json['language']?.toString().toUpperCase() ?? 'TOP HITS',
       songs: [],

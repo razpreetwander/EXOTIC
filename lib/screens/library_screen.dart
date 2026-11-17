@@ -8,6 +8,7 @@ import 'artist_profile_screen.dart';
 import 'playlist_detail_screen.dart';
 import '../models/playlist_model.dart';
 import '../widgets/create_playlist_dialog.dart';
+import 'local_music_screen.dart';
 
 class LibraryScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -166,6 +167,45 @@ class _LibraryScreenState extends State<LibraryScreen> {
                                 songs: likedSongs,
                               ),
                             ),
+                          ),
+                        );
+                      },
+                    ),
+
+                  // 1B. Local Music Pinned Item (Classified: All Songs, Artists, Albums, Favorite Local)
+                  if (_selectedFilter == 'All' || _selectedFilter == 'Playlists')
+                    ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      leading: Container(
+                        width: 54,
+                        height: 54,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF7A00), Color(0xFF9C27B0)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: const Icon(Icons.folder_special, color: Colors.white, size: 26),
+                      ),
+                      title: const Row(
+                        children: [
+                          Text('Local Music', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                        ],
+                      ),
+                      subtitle: const Row(
+                        children: [
+                          Icon(Icons.phone_android, color: AppColors.primary, size: 12),
+                          SizedBox(width: 4),
+                          Text('Device Audio • All Songs, Artists, Albums', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LocalMusicScreen(),
                           ),
                         );
                       },

@@ -173,10 +173,10 @@ class SettingsScreen extends StatelessWidget {
                     onTap: () => _showDataSaverDialog(context, settings),
                   ),
 
-                  // 8. Media Quality
+                  // 8. Streaming Configuration
                   _buildSettingTile(
                     icon: Icons.bar_chart_outlined,
-                    title: 'Media quality',
+                    title: 'Streaming configuration',
                     subtitle: 'Stream: ${settings.audioQuality}',
                     onTap: () => _showMediaQualitySheet(context, settings),
                   ),
@@ -193,7 +193,7 @@ class SettingsScreen extends StatelessWidget {
                   _buildSettingTile(
                     icon: Icons.info_outline,
                     title: 'About and support',
-                    subtitle: 'Version 2.5.0 • JioSaavn Realtime 320k Lossless Engine',
+                    subtitle: 'Version 2.5.0 • Exotic Realtime Music Engine',
                     onTap: () => _showAboutDialog(context),
                   ),
 
@@ -253,7 +253,7 @@ class SettingsScreen extends StatelessWidget {
           autofocus: true,
           style: const TextStyle(color: Colors.white),
           decoration: const InputDecoration(
-            hintText: 'Type: quality, equalizer, account, cache...',
+            hintText: 'Type: stream, equalizer, account, cache...',
             hintStyle: TextStyle(color: Colors.white38),
           ),
         ),
@@ -668,12 +668,12 @@ class SettingsScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Audio Streaming Quality', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text('Audio Streaming Configuration', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 12),
-            _buildQualityItem(context, settings, 'Ultra HD (FLAC 24-bit/96kHz)'),
-            _buildQualityItem(context, settings, 'High (320 kbps AAC)'),
-            _buildQualityItem(context, settings, 'Normal (160 kbps)'),
-            _buildQualityItem(context, settings, 'Automatic (Network Adaptive)'),
+            _buildQualityItem(context, settings, 'Ultra HD Master Fidelity'),
+            _buildQualityItem(context, settings, 'High Fidelity AAC'),
+            _buildQualityItem(context, settings, 'Standard Fidelity'),
+            _buildQualityItem(context, settings, 'Automatic Adaptive Stream'),
           ],
         ),
       ),

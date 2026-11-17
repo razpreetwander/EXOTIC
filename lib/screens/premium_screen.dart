@@ -78,7 +78,7 @@ class PremiumScreen extends StatelessWidget {
               _buildPerkRow(Icons.block, 'Ad-free music listening', 'Enjoy uninterrupted high quality music streaming.'),
               _buildPerkRow(Icons.download_for_offline_outlined, 'Download to listen offline', 'Save your data by listening without an internet connection.'),
               _buildPerkRow(Icons.shuffle, 'Play in any order', 'Unlimited skips, play whatever song you want on demand.'),
-              _buildPerkRow(Icons.high_quality, 'Ultra-High Audio Quality', 'Listen in pristine 320kbps Lossless audio quality.'),
+              _buildPerkRow(Icons.high_quality, 'Pristine Sound', 'Listen to your tracks in crystal-clear master definition.'),
 
               const SizedBox(height: 24),
               const Text(

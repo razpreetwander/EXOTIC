@@ -253,6 +253,61 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       'category': 'International',
       'image': 'https://c.saavncdn.com/artists/Alan_Walker_003_20231116095443_500x500.jpg',
     },
+    {
+      'name': 'Atif Aslam',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/169/Monsoon-Bollywood-Hits-Hindi-2023-20230616161232-500x500.jpg',
+    },
+    {
+      'name': 'Sonu Nigam',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Sonu_Nigam_003_20241118063854_500x500.jpg',
+    },
+    {
+      'name': 'KK',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/KK_002_20220601044439_500x500.jpg',
+    },
+    {
+      'name': 'Mohit Chauhan',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Mohit_Chauhan_002_20201029175402_500x500.jpg',
+    },
+    {
+      'name': 'Vishal Mishra',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Vishal_Mishra_006_20231120101037_500x500.jpg',
+    },
+    {
+      'name': 'Darshan Raval',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Darshan_Raval_006_20241118064132_500x500.jpg',
+    },
+    {
+      'name': 'Armaan Malik',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Armaan_Malik_004_20241118064115_500x500.jpg',
+    },
+    {
+      'name': 'Sunidhi Chauhan',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Sunidhi_Chauhan_004_20231120090812_500x500.jpg',
+    },
+    {
+      'name': 'Kumar Sanu',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Kumar_Sanu_002_20240119064147_500x500.jpg',
+    },
+    {
+      'name': 'Alka Yagnik',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Alka_Yagnik_003_20240119064219_500x500.jpg',
+    },
+    {
+      'name': 'Udit Narayan',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Udit_Narayan_002_20240119064157_500x500.jpg',
+    },
   ];
 
   @override
@@ -1006,6 +1061,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                       const SnackBar(content: Text('Please select at least 1 language to continue')),
                     );
                   } else {
+                    setState(() {
+                      if (_selectedLanguages.contains('Hindi')) {
+                        _artistCategoryFilter = 'Hindi';
+                      } else if (_selectedLanguages.contains('Punjabi')) {
+                        _artistCategoryFilter = 'Punjabi';
+                      } else {
+                        _artistCategoryFilter = _selectedLanguages.first;
+                      }
+                    });
                     _nextPage();
                   }
                 },
@@ -1071,13 +1135,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 physics: const BouncingScrollPhysics(),
                 child: Row(
                   children: [
+                    ..._selectedLanguages.map((lang) => Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: _buildArtistCategoryChip(lang),
+                        )),
                     _buildArtistCategoryChip('For You'),
                     const SizedBox(width: 8),
+                    if (!_selectedLanguages.contains('Hindi')) ...[
+                      _buildArtistCategoryChip('Hindi'),
+                      const SizedBox(width: 8),
+                    ],
+                    if (!_selectedLanguages.contains('Punjabi')) ...[
+                      _buildArtistCategoryChip('Punjabi'),
+                      const SizedBox(width: 8),
+                    ],
                     _buildArtistCategoryChip('International'),
-                    const SizedBox(width: 8),
-                    _buildArtistCategoryChip('Punjabi'),
-                    const SizedBox(width: 8),
-                    _buildArtistCategoryChip('Hindi'),
                   ],
                 ),
               ),
@@ -1340,7 +1412,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           const SizedBox(height: 24),
 
           const Text(
-            "I know, we're nice. Now access unlimited lossless 320kbps streams, ad-free listening & offline downloads with VIP Rewards!",
+            "I know, we're nice. Now access unlimited ad-free music streams, master audio & offline downloads with VIP Rewards!",
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white70, fontSize: 14, height: 1.4),
           ),

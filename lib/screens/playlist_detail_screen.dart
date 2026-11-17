@@ -135,7 +135,7 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          '${_songs.length} Songs • Lossless 320kbps Streams',
+                          '${_songs.length} Songs',
                           style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
                         ),
                       ],
@@ -263,26 +263,11 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
                             fontSize: 14,
                           ),
                         ),
-                        subtitle: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF2A2A2A),
-                                borderRadius: BorderRadius.circular(3),
-                              ),
-                              child: const Text('320k', style: TextStyle(color: AppColors.primary, fontSize: 9, fontWeight: FontWeight.bold)),
-                            ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
-                                song.artist,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                              ),
-                            ),
-                          ],
+                        subtitle: Text(
+                          song.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
                         ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,

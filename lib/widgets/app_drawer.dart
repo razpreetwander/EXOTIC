@@ -5,6 +5,7 @@ import '../screens/settings_screen.dart';
 import '../providers/admin_provider.dart';
 import '../providers/music_library_provider.dart';
 import '../providers/audio_player_provider.dart';
+import '../providers/settings_provider.dart';
 
 class AppDrawer extends StatelessWidget {
   const AppDrawer({super.key});
@@ -14,6 +15,7 @@ class AppDrawer extends StatelessWidget {
     final adminProvider = Provider.of<AdminProvider>(context);
     final libraryProvider = Provider.of<MusicLibraryProvider>(context);
     final playerProvider = Provider.of<AudioPlayerProvider>(context);
+    final settings = Provider.of<SettingsProvider>(context);
 
     return Drawer(
       backgroundColor: const Color(0xFF1E1F24),
@@ -25,7 +27,7 @@ class AppDrawer extends StatelessWidget {
             GestureDetector(
               onTap: () {
                 Navigator.pop(context);
-                _showProfileDialog(context, libraryProvider);
+                _showProfileDialog(context, libraryProvider, settings);
               },
               child: Container(
                 color: Colors.transparent,
@@ -48,20 +50,22 @@ class AppDrawer extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Expanded(
+                    Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Armaansingh',
-                            style: TextStyle(
+                            settings.username,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                               fontSize: 18,
                             ),
                           ),
-                          SizedBox(height: 2),
-                          Text(
+                          const SizedBox(height: 2),
+                          const Text(
                             'View profile',
                             style: TextStyle(
                               color: AppColors.textSecondary,
@@ -86,7 +90,7 @@ class AppDrawer extends StatelessWidget {
               subtitle: const Text('Switch or add secondary profile', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
               onTap: () {
                 Navigator.pop(context);
-                _showAddAccountDialog(context);
+                _showAddAccountDialog(context, settings);
               },
             ),
 
@@ -139,20 +143,30 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  void _showProfileDialog(BuildContext context, MusicLibraryProvider lib) {
+  void _showProfileDialog(BuildContext context, MusicLibraryProvider lib, SettingsProvider settings) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1F24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
+        title: Row(
           children: [
             CircleAvatar(
               backgroundColor: AppColors.primary,
-              child: Text('A', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              child: Text(
+                settings.username.isNotEmpty ? settings.username[0].toUpperCase() : 'U',
+                style: const TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              ),
             ),
-            SizedBox(width: 12),
-            Text('Armaansingh Profile', style: TextStyle(color: Colors.white, fontSize: 16)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                '${settings.username} Profile',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
           ],
         ),
         content: Column(
@@ -173,13 +187,13 @@ class AppDrawer extends StatelessWidget {
     );
   }
 
-  void _showAddAccountDialog(BuildContext context) {
+  void _showAddAccountDialog(BuildContext context, SettingsProvider settings) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1F24),
         title: const Text('Add / Switch Account', style: TextStyle(color: Colors.white, fontSize: 16)),
-        content: const Text('Multi-account sync enabled. You are currently logged in as primary account: Armaansingh.', style: TextStyle(color: Colors.white70, fontSize: 13)),
+        content: Text('Multi-account sync enabled. You are currently logged in as primary account: ${settings.username}.', style: const TextStyle(color: Colors.white70, fontSize: 13)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK', style: TextStyle(color: AppColors.primary))),
         ],
