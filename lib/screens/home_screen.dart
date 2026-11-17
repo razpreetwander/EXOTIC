@@ -38,17 +38,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
   static final Map<String, String> _artistImages = {
     'Karan Aujla': 'https://c.saavncdn.com/artists/Karan_Aujla_005_20260925061936_500x500.jpg',
-    'Diljit Dosanjh': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_004_20260925061936_500x500.jpg',
-    'Sidhu Moose Wala': 'https://c.saavncdn.com/artists/Sidhu_Moose_Wala_003_20260925061936_500x500.jpg',
-    'Arijit Singh': 'https://c.saavncdn.com/artists/Arijit_Singh_002_20260925061936_500x500.jpg',
-    'Shubh': 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400',
-    'AP Dhillon': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
-    'Yo Yo Honey Singh': 'https://c.saavncdn.com/artists/Yo_Yo_Honey_Singh_002_20260925061936_500x500.jpg',
-    'Badshah': 'https://c.saavncdn.com/artists/Badshah_005_20260925061936_500x500.jpg',
-    'Divine': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400',
-    'The Weeknd': 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400',
-    'Dua Lipa': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400',
-    'Justin Bieber': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400',
+    'Diljit Dosanjh': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_005_20231025073054_500x500.jpg',
+    'Sidhu Moose Wala': 'https://c.saavncdn.com/artists/Sidhu_Moose_Wala_004_20250617183705_500x500.jpg',
+    'Arijit Singh': 'https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_500x500.jpg',
+    'Shubh': 'https://c.saavncdn.com/artists/Shubh_000_20220921112507_500x500.jpg',
+    'AP Dhillon': 'https://c.saavncdn.com/890/Excuses-English-2021-20210930112054-500x500.jpg',
+    'Yo Yo Honey Singh': 'https://c.saavncdn.com/artists/Yo_Yo_Honey_Singh_004_20260811095253_500x500.jpg',
+    'Badshah': 'https://c.saavncdn.com/artists/Badshah_006_20241118064015_500x500.jpg',
+    'DIVINE': 'https://c.saavncdn.com/artists/DIVINE_006_20250911071442_500x500.jpg',
+    'Divine': 'https://c.saavncdn.com/artists/DIVINE_006_20250911071442_500x500.jpg',
+    'The Weeknd': 'https://c.saavncdn.com/artists/The_Weeknd_002_20241003071400_500x500.jpg',
+    'Dua Lipa': 'https://c.saavncdn.com/artists/Dua_Lipa_004_20231120090922_500x500.jpg',
+    'Justin Bieber': 'https://c.saavncdn.com/artists/Justin_Bieber_005_20201127112218_500x500.jpg',
+    'Taylor Swift': 'https://c.saavncdn.com/artists/Taylor_Swift_003_20200226074119_500x500.jpg',
+    'BTS': 'https://c.saavncdn.com/artists/BTS_006_20260624192553_500x500.jpg',
+    'Ed Sheeran': 'https://c.saavncdn.com/artists/Ed_Sheeran_002_20250625073038_500x500.jpg',
+    'Drake': 'https://c.saavncdn.com/artists/Drake_006_20260520062317_500x500.jpg',
+    'Guru Randhawa': 'https://c.saavncdn.com/artists/Guru_Randhawa_005_20261026140443_500x500.jpg',
+    'Amrinder Gill': 'https://c.saavncdn.com/artists/Amrinder_Gill_500x500.jpg',
+    'B Praak': 'https://c.saavncdn.com/artists/B_Praak_001_20191118112005_500x500.jpg',
+    'Atif Aslam': 'https://c.saavncdn.com/169/Monsoon-Bollywood-Hits-Hindi-2023-20230616161232-500x500.jpg',
+    'Sunanda Sharma': 'https://c.saavncdn.com/545/Jaani-Tera-Naa-Punjabi-2017-500x500.jpg',
+    'Gippy Grewal': 'https://c.saavncdn.com/artists/Gippy_Grewal_004_20191118143844_500x500.jpg',
+    'Jass Manak': 'https://c.saavncdn.com/artists/Jass_Manak_001_20240119064204_500x500.jpg',
+    'Neha Kakkar': 'https://c.saavncdn.com/artists/Neha_Kakkar_007_20241212115832_500x500.jpg',
+    'Shreya Ghoshal': 'https://c.saavncdn.com/artists/Shreya_Ghoshal_007_20241101074144_500x500.jpg',
+    'Jubin Nautiyal': 'https://c.saavncdn.com/artists/Jubin_Nautiyal_003_20231130204020_500x500.jpg',
+    'Lata Mangeshkar': 'https://c.saavncdn.com/artists/Lata_Mangeshkar_004_20230623105323_500x500.jpg',
+    'Kishore Kumar': 'https://c.saavncdn.com/artists/Kishore_Kumar_500x500.jpg',
   };
 
   @override
@@ -69,7 +86,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 1. Build favorite artists models from user's selected preferences
       final List<Artist> favArtists = preferredArtists.map((name) {
-        final img = _artistImages[name] ?? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400';
+        final img = _artistImages[name] ?? 'https://c.saavncdn.com/artists/Karan_Aujla_005_20260925061936_500x500.jpg';
         return Artist(
           id: 'artist_${name.toLowerCase().replaceAll(' ', '_')}',
           name: name,
@@ -88,13 +105,13 @@ class _HomeScreenState extends State<HomeScreen> {
       // 3. Fetch Trending 50 India
       final trending = await SaavnApiService.searchSongs('Trending Top 50 India', limit: 12);
 
-      // 4. Fetch First Preferred Language Hits
+      // 4. Fetch First Preferred Language Hits (Famous official songs)
       final lang1 = preferredLanguages.isNotEmpty ? preferredLanguages[0] : 'Punjabi';
-      final lang1Songs = await SaavnApiService.searchSongs('$lang1 Top Hits', limit: 12);
+      final lang1Songs = await SaavnApiService.getFamousSongsForLanguage(lang1, limit: 12);
 
-      // 5. Fetch Second Preferred Language Hits
-      final lang2 = preferredLanguages.length > 1 ? preferredLanguages[1] : 'Bollywood';
-      final lang2Songs = await SaavnApiService.searchSongs('$lang2 Romantic Hits', limit: 12);
+      // 5. Fetch Second Preferred Language Hits (Famous official songs)
+      final lang2 = preferredLanguages.length > 1 ? preferredLanguages[1] : 'Hindi';
+      final lang2Songs = await SaavnApiService.getFamousSongsForLanguage(lang2, limit: 12);
 
       // 6. Fetch Real JioSaavn Playlists
       final playlists = await SaavnApiService.searchPlaylists('Top Hits India', limit: 10);
@@ -364,6 +381,150 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
       ),
+
+      // Featured Playlist Banner (Highlights the top trending playlist banner)
+      if (_saavnPlaylists.isNotEmpty) ...[
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+            child: GestureDetector(
+              onTap: () {
+                final topPl = _saavnPlaylists.first;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PlaylistDetailScreen(playlist: topPl),
+                  ),
+                );
+              },
+              child: Container(
+                height: 180,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primary.withOpacity(0.25),
+                      blurRadius: 18,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(
+                        _saavnPlaylists.first.coverUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(color: const Color(0xFF242424)),
+                      ),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.black.withOpacity(0.9),
+                              Colors.black.withOpacity(0.4),
+                              Colors.transparent,
+                            ],
+                            begin: Alignment.bottomLeft,
+                            end: Alignment.topRight,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'FEATURED PLAYLIST • 320K LOSSLESS',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 10,
+                                  letterSpacing: 0.8,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              _saavnPlaylists.first.title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w900,
+                                fontSize: 18,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _saavnPlaylists.first.description,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Row(
+                              children: [
+                                ElevatedButton.icon(
+                                  icon: const Icon(Icons.play_arrow, color: Colors.black, size: 20),
+                                  label: const Text('Play Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: AppColors.primary,
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  ),
+                                  onPressed: () async {
+                                    final songs = await SaavnApiService.getPlaylistSongs(_saavnPlaylists.first.id);
+                                    if (songs.isNotEmpty) {
+                                      player.playPlaylist(songs);
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 10),
+                                OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.white,
+                                    side: const BorderSide(color: Colors.white30),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (_) => PlaylistDetailScreen(playlist: _saavnPlaylists.first),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('View Tracks', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
 
       // 3. Trending Playlists Carousel (Real JioSaavn Playlists)
       if (_saavnPlaylists.isNotEmpty) ...[

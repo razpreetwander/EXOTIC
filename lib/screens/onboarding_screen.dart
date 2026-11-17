@@ -19,94 +19,94 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   late final PageController _pageController;
   int _currentPage = 0;
 
-  // Form State
-  final TextEditingController _emailController = TextEditingController(text: 'exoticmusic@gmail.com');
-  final TextEditingController _passwordController = TextEditingController(text: 'exotic@2026');
-  final TextEditingController _nameController = TextEditingController(text: 'Exoticmusic');
+  // Form State (Cleared prefill so user enters their own details)
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _nameController = TextEditingController();
   final TextEditingController _artistSearchController = TextEditingController();
 
   bool _obscurePassword = true;
-  int _selectedDay = 17;
-  int _selectedMonth = 11;
+  int _selectedDay = 15;
+  int _selectedMonth = 6;
   int _selectedYear = 2000;
-  String _selectedGender = 'Male';
+  String _selectedGender = '';
 
   bool _optOutMarketing = true;
   bool _shareData = true;
 
-  // Selected Languages (Pre-select Punjabi & International as in video)
-  final Set<String> _selectedLanguages = {'Punjabi', 'International'};
+  // Selected Languages (User chooses their own preferences)
+  final Set<String> _selectedLanguages = {};
 
-  // Selected Artists
-  final Set<String> _selectedArtists = {'The Weeknd', 'Diljit Dosanjh', 'Karan Aujla'};
+  // Selected Artists (User chooses 3 or more)
+  final Set<String> _selectedArtists = {};
 
   String _artistCategoryFilter = 'For You';
 
-  // Language Cards Data (with background colors and artist cut-out photos)
+  // Language Cards Data with Exact JioSaavn CDN Artist Cut-outs
   final List<Map<String, dynamic>> _languages = [
     {
       'name': 'Hindi',
       'color': Color(0xFFE91429),
-      'image': 'https://c.saavncdn.com/artists/Arijit_Singh_002_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_500x500.jpg',
     },
     {
       'name': 'International',
       'color': Color(0xFFE8630A),
-      'image': 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/The_Weeknd_002_20241003071400_500x500.jpg',
     },
     {
       'name': 'Punjabi',
       'color': Color(0xFFB02897),
-      'image': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_004_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_005_20231025073054_500x500.jpg',
     },
     {
       'name': 'Tamil',
       'color': Color(0xFFC39600),
-      'image': 'https://c.saavncdn.com/artists/Anirudh_Ravichander_004_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Anirudh_Ravichander_003_20240905073045_500x500.jpg',
     },
     {
       'name': 'Telugu',
       'color': Color(0xFF1E88E5),
-      'image': 'https://c.saavncdn.com/artists/Sid_Sriram_003_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Sid_Sriram_003_20230221104642_500x500.jpg',
     },
     {
       'name': 'Malayalam',
       'color': Color(0xFF00897B),
-      'image': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/K_S_Chithra_500x500.jpg',
     },
     {
       'name': 'Marathi',
       'color': Color(0xFF8D6E63),
-      'image': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Ajay-Atul_500x500.jpg',
     },
     {
       'name': 'Gujarati',
       'color': Color(0xFFD81B60),
-      'image': 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Sachin-Jigar_500x500.jpg',
     },
     {
       'name': 'Bengali',
       'color': Color(0xFF3949AB),
-      'image': 'https://c.saavncdn.com/artists/Shreya_Ghoshal_004_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Shreya_Ghoshal_007_20241101074144_500x500.jpg',
     },
     {
       'name': 'Kannada',
       'color': Color(0xFF7CB342),
-      'image': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Vijay_Prakash_500x500.jpg',
     },
     {
       'name': 'Haryanvi',
       'color': Color(0xFF6A1B9A),
-      'image': 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Masoom_Sharma_001_20230623072237_500x500.jpg',
     },
     {
       'name': 'Bhojpuri',
       'color': Color(0xFFF57C00),
-      'image': 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Khesari_Lal_Yadav_001_20230526084013_500x500.jpg',
     },
   ];
 
-  // Artists Data with Category Tags
+  // Verified Artists Data with Exact JioSaavn CDN Photos
   final List<Map<String, String>> _allArtists = [
     {
       'name': 'Karan Aujla',
@@ -114,109 +114,144 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       'image': 'https://c.saavncdn.com/artists/Karan_Aujla_005_20260925061936_500x500.jpg',
     },
     {
-      'name': 'Taylor Swift',
-      'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400',
-    },
-    {
-      'name': 'The Weeknd',
-      'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400',
-    },
-    {
       'name': 'Diljit Dosanjh',
       'category': 'Punjabi',
-      'image': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_004_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_005_20231025073054_500x500.jpg',
     },
     {
       'name': 'Sidhu Moose Wala',
       'category': 'Punjabi',
-      'image': 'https://c.saavncdn.com/artists/Sidhu_Moose_Wala_003_20260925061936_500x500.jpg',
-    },
-    {
-      'name': 'BTS',
-      'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Sidhu_Moose_Wala_004_20250617183705_500x500.jpg',
     },
     {
       'name': 'Arijit Singh',
       'category': 'Hindi',
-      'image': 'https://c.saavncdn.com/artists/Arijit_Singh_002_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_500x500.jpg',
     },
     {
-      'name': 'Guru Randhawa',
-      'category': 'Punjabi',
-      'image': 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400',
-    },
-    {
-      'name': 'Ed Sheeran',
+      'name': 'The Weeknd',
       'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/The_Weeknd_002_20241003071400_500x500.jpg',
     },
     {
-      'name': 'Drake',
+      'name': 'Taylor Swift',
       'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400',
-    },
-    {
-      'name': 'Tame Impala',
-      'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=400',
-    },
-    {
-      'name': 'Amrinder Gill',
-      'category': 'Punjabi',
-      'image': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400',
-    },
-    {
-      'name': 'Justin Bieber',
-      'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Taylor_Swift_003_20200226074119_500x500.jpg',
     },
     {
       'name': 'Shubh',
       'category': 'Punjabi',
-      'image': 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Shubh_000_20220921112507_500x500.jpg',
+    },
+    {
+      'name': 'AP Dhillon',
+      'category': 'Punjabi',
+      'image': 'https://c.saavncdn.com/890/Excuses-English-2021-20210930112054-500x500.jpg',
+    },
+    {
+      'name': 'BTS',
+      'category': 'International',
+      'image': 'https://c.saavncdn.com/artists/BTS_006_20260624192553_500x500.jpg',
+    },
+    {
+      'name': 'Guru Randhawa',
+      'category': 'Punjabi',
+      'image': 'https://c.saavncdn.com/artists/Guru_Randhawa_005_20261026140443_500x500.jpg',
+    },
+    {
+      'name': 'Ed Sheeran',
+      'category': 'International',
+      'image': 'https://c.saavncdn.com/artists/Ed_Sheeran_002_20250625073038_500x500.jpg',
+    },
+    {
+      'name': 'Drake',
+      'category': 'International',
+      'image': 'https://c.saavncdn.com/artists/Drake_006_20260520062317_500x500.jpg',
+    },
+    {
+      'name': 'Tame Impala',
+      'category': 'International',
+      'image': 'https://c.saavncdn.com/artists/Tame_Impala_001_20200305094636_500x500.jpg',
+    },
+    {
+      'name': 'Amrinder Gill',
+      'category': 'Punjabi',
+      'image': 'https://c.saavncdn.com/artists/Amrinder_Gill_500x500.jpg',
+    },
+    {
+      'name': 'Justin Bieber',
+      'category': 'International',
+      'image': 'https://c.saavncdn.com/artists/Justin_Bieber_005_20201127112218_500x500.jpg',
     },
     {
       'name': 'Yo Yo Honey Singh',
       'category': 'Punjabi',
-      'image': 'https://c.saavncdn.com/artists/Yo_Yo_Honey_Singh_002_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Yo_Yo_Honey_Singh_004_20260811095253_500x500.jpg',
     },
     {
       'name': 'Badshah',
       'category': 'Hindi',
-      'image': 'https://c.saavncdn.com/artists/Badshah_005_20260925061936_500x500.jpg',
+      'image': 'https://c.saavncdn.com/artists/Badshah_006_20241118064015_500x500.jpg',
     },
     {
-      'name': 'Divine',
+      'name': 'DIVINE',
       'category': 'Hindi',
-      'image': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/DIVINE_006_20250911071442_500x500.jpg',
     },
     {
-      'name': 'Rihanna',
+      'name': 'Dua Lipa',
       'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Dua_Lipa_004_20231120090922_500x500.jpg',
     },
     {
       'name': 'Katy Perry',
       'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Katy_Perry_004_20200616105931_500x500.jpg',
     },
     {
       'name': 'Beyoncé',
       'category': 'International',
-      'image': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Beyonc___002_20261021205507_500x500.jpg',
     },
     {
       'name': 'Gippy Grewal',
       'category': 'Punjabi',
-      'image': 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400',
+      'image': 'https://c.saavncdn.com/artists/Gippy_Grewal_004_20191118143844_500x500.jpg',
     },
     {
       'name': 'Sunanda Sharma',
       'category': 'Punjabi',
-      'image': 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=400',
+      'image': 'https://c.saavncdn.com/545/Jaani-Tera-Naa-Punjabi-2017-500x500.jpg',
+    },
+    {
+      'name': 'B Praak',
+      'category': 'Punjabi',
+      'image': 'https://c.saavncdn.com/artists/B_Praak_001_20191118112005_500x500.jpg',
+    },
+    {
+      'name': 'Jass Manak',
+      'category': 'Punjabi',
+      'image': 'https://c.saavncdn.com/artists/Jass_Manak_001_20240119064204_500x500.jpg',
+    },
+    {
+      'name': 'Neha Kakkar',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Neha_Kakkar_007_20241212115832_500x500.jpg',
+    },
+    {
+      'name': 'Shreya Ghoshal',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Shreya_Ghoshal_007_20241101074144_500x500.jpg',
+    },
+    {
+      'name': 'Jubin Nautiyal',
+      'category': 'Hindi',
+      'image': 'https://c.saavncdn.com/artists/Jubin_Nautiyal_003_20231130204020_500x500.jpg',
+    },
+    {
+      'name': 'Alan Walker',
+      'category': 'International',
+      'image': 'https://c.saavncdn.com/artists/Alan_Walker_003_20231116095443_500x500.jpg',
     },
   ];
 
@@ -240,7 +275,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   }
 
   void _nextPage() {
-    if (_currentPage < 10) {
+    if (_currentPage < 11) {
       _pageController.nextPage(
         duration: const Duration(milliseconds: 320),
         curve: Curves.easeOutCubic,
@@ -293,7 +328,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
         child: PageView(
           controller: _pageController,
           physics: const NeverScrollableScrollPhysics(), // Controlled via buttons
-          onPageChanged: (page) => setState(() => _currentPage = page),
+          onPageChanged: (page) {
+            setState(() => _currentPage = page);
+            if (page == 6) {
+              Future.delayed(const Duration(milliseconds: 1600), () {
+                if (mounted && _currentPage == 6) _nextPage();
+              });
+            } else if (page == 10) {
+              Future.delayed(const Duration(milliseconds: 2200), () {
+                if (mounted && _currentPage == 10) _nextPage();
+              });
+            }
+          },
           children: [
             _buildPage0Landing(),
             _buildPage1Email(),
@@ -431,7 +477,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(25)),
               ),
-              onPressed: _nextPage,
+              onPressed: () {
+                final email = _emailController.text.trim();
+                if (email.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter your email address to continue')),
+                  );
+                } else {
+                  _nextPage();
+                }
+              },
               child: const Text('Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             ),
           ),
@@ -506,7 +561,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 ),
-                onPressed: _nextPage,
+                onPressed: () {
+                  final pwd = _passwordController.text.trim();
+                  if (pwd.length < 6) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a password with at least 6 characters')),
+                    );
+                  } else {
+                    _nextPage();
+                  }
+                },
                 child: const Text('Next', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
@@ -715,9 +779,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 ),
                 onPressed: () {
-                  _nextPage();
-                  // Trigger pulse loading then auto advance
-                  Timer(const Duration(milliseconds: 1400), _nextPage);
+                  final name = _nameController.text.trim();
+                  if (name.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter your name to create your account')),
+                    );
+                  } else {
+                    _nextPage();
+                  }
                 },
                 child: const Text('Create account', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
@@ -931,7 +1000,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                   foregroundColor: Colors.black,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                 ),
-                onPressed: _selectedLanguages.isNotEmpty ? _nextPage : null,
+                onPressed: () {
+                  if (_selectedLanguages.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please select at least 1 language to continue')),
+                    );
+                  } else {
+                    _nextPage();
+                  }
+                },
                 child: const Text('Next', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               ),
             ),
@@ -1134,58 +1211,77 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   // =========================================================================
   Widget _buildPage10GreatPicks() {
     final selList = _allArtists.where((a) => _selectedArtists.contains(a['name'])).take(5).toList();
+    final displayList = selList.isNotEmpty ? selList : _allArtists.take(3).toList();
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Overlapping Avatars Row
-          SizedBox(
-            height: 90,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: selList.map((a) {
-                return Align(
-                  widthFactor: 0.65,
-                  child: Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF121212), width: 3),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _nextPage,
+      child: Container(
+        color: const Color(0xFF121212),
+        padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Overlapping Avatars Row
+            SizedBox(
+              height: 90,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: displayList.map((a) {
+                  return Align(
+                    widthFactor: 0.65,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: const Color(0xFF121212), width: 3),
+                      ),
+                      child: CircleAvatar(
+                        radius: 36,
+                        backgroundImage: NetworkImage(a['image']!),
+                      ),
                     ),
-                    child: CircleAvatar(
-                      radius: 36,
-                      backgroundImage: NetworkImage(a['image']!),
-                    ),
-                  ),
-                );
-              }).toList(),
+                  );
+                }).toList(),
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 24),
 
-          const Text(
-            'Great picks!',
-            style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white),
-          ),
-          const SizedBox(height: 20),
+            const Text(
+              'Great picks!',
+              style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: Colors.white),
+            ),
+            const SizedBox(height: 20),
 
-          // 3 Pulsing dots + "Finding music for you..."
-          const Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              _PulsingDot(delay: 0),
-              SizedBox(width: 8),
-              _PulsingDot(delay: 200),
-              SizedBox(width: 8),
-              _PulsingDot(delay: 400),
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Finding music for you...',
-            style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
-          ),
-        ],
+            // 3 Pulsing dots + "Finding music for you..."
+            const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                _PulsingDot(delay: 0),
+                SizedBox(width: 8),
+                _PulsingDot(delay: 200),
+                SizedBox(width: 8),
+                _PulsingDot(delay: 400),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Finding music for you...',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 14),
+            ),
+            const SizedBox(height: 36),
+
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.black,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 12),
+              ),
+              onPressed: _nextPage,
+              child: const Text('Continue', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            ),
+          ],
+        ),
       ),
     );
   }

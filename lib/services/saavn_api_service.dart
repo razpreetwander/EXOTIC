@@ -223,6 +223,40 @@ class SaavnApiService {
     }
   }
 
+  /// 8B. Get Famous Verified Songs for a Language (From Official Top Playlists)
+  static Future<List<Song>> getFamousSongsForLanguage(String language, {int limit = 15}) async {
+    final cleanLang = language.trim();
+    final Map<String, String> playlistQueries = {
+      'Punjabi': 'Punjabi Superhits Top 50',
+      'Hindi': 'Hindi Superhits Top 50',
+      'International': 'English Global Top 50',
+      'English': 'English Global Top 50',
+      'Telugu': 'Telugu Superhits Top 50',
+      'Tamil': 'Tamil Superhits Top 50',
+      'Malayalam': 'Malayalam Top 50',
+      'Marathi': 'Marathi Top 50',
+      'Gujarati': 'Gujarati Top 50',
+      'Bengali': 'Bengali Top 50',
+      'Kannada': 'Kannada Top 50',
+      'Haryanvi': 'Haryanvi Top 50',
+      'Bhojpuri': 'Bhojpuri Top 50',
+    };
+
+    final query = playlistQueries[cleanLang] ?? '$cleanLang Superhits';
+
+    try {
+      final playlists = await searchPlaylists(query, limit: 3);
+      if (playlists.isNotEmpty) {
+        final songs = await getPlaylistSongs(playlists.first.id, limit: limit);
+        if (songs.isNotEmpty) return songs;
+      }
+      return await searchSongs('$cleanLang Hits', limit: limit);
+    } catch (e) {
+      debugPrint('Error getting famous songs for $cleanLang: $e');
+      return await searchSongs(cleanLang, limit: limit);
+    }
+  }
+
   /// 9. Real-Time Synced Lyrics Engine (LRCLIB + JioSaavn Fallback)
   static Future<List<LyricLine>> fetchRealtimeLyrics(
     String rawTitle,
