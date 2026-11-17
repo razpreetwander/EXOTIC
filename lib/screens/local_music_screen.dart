@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../constants/colors.dart';
+import '../theme/app_colors.dart';
 import '../models/song_model.dart';
 import '../providers/audio_player_provider.dart';
 import '../services/local_music_service.dart';
@@ -108,7 +108,7 @@ class _LocalMusicScreenState extends State<LocalMusicScreen> {
             ),
             Text(
               '${_allLocalSongs.length} tracks on device',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
             ),
           ],
         ),
@@ -139,7 +139,7 @@ class _LocalMusicScreenState extends State<LocalMusicScreen> {
                   decoration: InputDecoration(
                     hintText: 'Search local songs, artists, albums...',
                     hintStyle: const TextStyle(color: Colors.white38, fontSize: 13),
-                    prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 20),
+                    prefixIcon: Icon(Icons.search, color: AppColors.primary, size: 20),
                     suffixIcon: _searchQuery.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.clear, color: Colors.white54, size: 18),
@@ -319,7 +319,7 @@ class _LocalMusicScreenState extends State<LocalMusicScreen> {
             '${song.artist} • ${_formatDuration(song.duration)}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
           trailing: IconButton(
             icon: Icon(
@@ -365,7 +365,7 @@ class _LocalMusicScreenState extends State<LocalMusicScreen> {
               color: AppColors.primary.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.person, color: AppColors.primary, size: 26),
+            child: Icon(Icons.person, color: AppColors.primary, size: 26),
           ),
           title: Text(
             artist,
@@ -375,7 +375,7 @@ class _LocalMusicScreenState extends State<LocalMusicScreen> {
           ),
           subtitle: Text(
             '$count songs',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
           trailing: const Icon(Icons.chevron_right, color: Colors.white38),
           onTap: () {
@@ -414,7 +414,7 @@ class _LocalMusicScreenState extends State<LocalMusicScreen> {
               color: const Color(0xFF242424),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(Icons.folder, color: AppColors.primary, size: 26),
+            child: Icon(Icons.folder, color: AppColors.primary, size: 26),
           ),
           title: Text(
             album,
@@ -424,7 +424,7 @@ class _LocalMusicScreenState extends State<LocalMusicScreen> {
           ),
           subtitle: Text(
             '$count songs in folder',
-            style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+            style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
           ),
           trailing: const Icon(Icons.chevron_right, color: Colors.white38),
           onTap: () {

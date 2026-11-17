@@ -94,6 +94,8 @@ class LocalMusicService {
         duration: Duration(seconds: durationSec),
         coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
         audioUrl: file.path, // Direct file path for DeviceFileSource
+        genre: '',
+        language: 'local',
       );
     } catch (e) {
       debugPrint('Error parsing file ${file.path}: $e');
