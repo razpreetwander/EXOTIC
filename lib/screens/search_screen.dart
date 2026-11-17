@@ -4,11 +4,13 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../data/music_data.dart';
 import '../models/song_model.dart';
+import '../models/artist_model.dart';
 import '../providers/audio_player_provider.dart';
 import '../providers/music_library_provider.dart';
 import '../services/saavn_api_service.dart';
 import '../services/yt_music_service.dart';
 import '../theme/app_colors.dart';
+import 'artist_profile_screen.dart';
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -23,6 +25,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   bool _isLoading = false;
   List<Song> _searchResults = [];
+  List<Artist> _artistResults = [];
   String _activeGenre = 'All';
 
   List<String> _recentSearches = [];
@@ -108,6 +111,7 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {
         _isLoading = false;
         _searchResults = [];
+        _artistResults = [];
       });
       return;
     }
@@ -125,15 +129,31 @@ class _SearchScreenState extends State<SearchScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // 1. Search JioSaavn Primary Engine
-      final saavnFuture = SaavnApiService.searchSongs(cleanQuery, limit: 20);
-      // 2. Search YouTube Secondary/Fallback Engine in Parallel
-      final ytFuture = YtMusicService.searchSongsOnly(cleanQuery, limit: 10);
+      // 1. Parallel search for Songs from JioSaavn & YouTube
+      final saavnSongsFuture = SaavnApiService.searchSongs(cleanQuery, limit: 20);
+      final ytSongsFuture = YtMusicService.searchSongsOnly(cleanQuery, limit: 10);
 
-      final saavnSongs = await saavnFuture;
-      final ytSongs = await ytFuture;
+      // 2. Parallel search for Artists from JioSaavn & YouTube
+      final saavnArtistsFuture = SaavnApiService.searchArtists(cleanQuery, limit: 3);
+      final ytArtistsFuture = YtMusicService.searchArtists(cleanQuery);
 
-      // 3. Merge Non-Duplicates (Blueprint Rule 4: Match title & artist)
+      final saavnSongs = await saavnSongsFuture;
+      final ytSongs = await ytSongsFuture;
+      final saavnArtists = await saavnArtistsFuture;
+      final ytArtists = await ytArtistsFuture;
+
+      // Merge Artists without duplicates
+      final Set<String> seenArtists = {};
+      final List<Artist> combinedArtists = [];
+      for (final a in [...saavnArtists, ...ytArtists]) {
+        final key = a.name.toLowerCase().trim();
+        if (key.isNotEmpty && !seenArtists.contains(key)) {
+          seenArtists.add(key);
+          combinedArtists.add(a);
+        }
+      }
+
+      // Merge Songs without duplicates (Blueprint Rule 4: Match title & artist)
       final Set<String> existingSignatures = {};
       final List<Song> combined = [];
 
@@ -155,6 +175,7 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {
         _isLoading = false;
         _searchResults = combined;
+        _artistResults = combinedArtists;
       });
     } catch (e) {
       debugPrint('Error during hybrid music search: $e');
@@ -430,10 +451,10 @@ class _SearchScreenState extends State<SearchScreen> {
     AudioPlayerProvider playerProvider,
     MusicLibraryProvider libraryProvider,
   ) {
-    if (results.isEmpty) {
+    if (results.isEmpty && _artistResults.isEmpty) {
       return const Center(
         child: Text(
-          'No tracks found. Try another query.',
+          'No tracks or artists found. Try another query.',
           style: TextStyle(color: AppColors.textSecondary),
         ),
       );
@@ -441,9 +462,86 @@ class _SearchScreenState extends State<SearchScreen> {
 
     return ListView.builder(
       physics: const BouncingScrollPhysics(),
-      itemCount: results.length,
+      itemCount: results.length + (_artistResults.isNotEmpty ? 1 : 0),
       itemBuilder: (context, index) {
-        final song = results[index];
+        // Top Item: Artist Channel Card if available
+        if (_artistResults.isNotEmpty && index == 0) {
+          final topArtist = _artistResults.first;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12, top: 4),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.primary.withOpacity(0.4)),
+            ),
+            child: InkWell(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => ArtistProfileScreen(artist: topArtist),
+                  ),
+                );
+              },
+              child: Row(
+                children: [
+                  ClipOval(
+                    child: Image.network(
+                      topArtist.imageUrl,
+                      width: 54,
+                      height: 54,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 54,
+                        height: 54,
+                        color: AppColors.surfaceLight,
+                        child: const Icon(Icons.person, color: AppColors.primary, size: 28),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Flexible(
+                              child: Text(
+                                topArtist.name,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Icon(Icons.verified, color: AppColors.primary, size: 16),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        const Text(
+                          'Artist Channel • Tap to explore all songs & albums',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, color: AppColors.primary, size: 16),
+                ],
+              ),
+            ),
+          );
+        }
+
+        final songIndex = _artistResults.isNotEmpty ? index - 1 : index;
+        final song = results[songIndex];
         final isCurrent = playerProvider.currentSong?.id == song.id;
 
         return ListTile(

@@ -59,6 +59,9 @@ class AudioPlayerProvider with ChangeNotifier {
   void _initListeners() {
     _audioPlayer.onPlayerStateChanged.listen((state) {
       _isPlaying = (state == PlayerState.playing);
+      if (state == PlayerState.playing || state == PlayerState.paused) {
+        _isLoading = false;
+      }
       if (_isPlaying) {
         _startSpectrumAnimation();
       } else {
@@ -98,17 +101,11 @@ class AudioPlayerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> playSong(Song song, {List<Song>? contextPlaylist}) async {
-    if (contextPlaylist != null && contextPlaylist.isNotEmpty) {
-      _playlist = List.from(contextPlaylist);
-    }
-
+  Future<Song> _resolveSongStream(Song song) async {
     Song playableSong = song;
 
     // 1. YouTube Direct Audio Resolution
-    if (playableSong.id.startsWith('yt_')) {
-      _isLoading = true;
-      notifyListeners();
+    if (playableSong.id.startsWith('yt_') && (playableSong.audioUrl.isEmpty || !playableSong.audioUrl.startsWith('http'))) {
       try {
         final ytStream = await YtMusicService.getDirectAudioStreamUrl(playableSong.id);
         if (ytStream.isNotEmpty) {
@@ -117,11 +114,20 @@ class AudioPlayerProvider with ChangeNotifier {
       } catch (e) {
         debugPrint('Error resolving YouTube direct stream: $e');
       }
+
+      // Fast Parallel JioSaavn Fallback for YouTube songs
+      if (playableSong.audioUrl.isEmpty) {
+        try {
+          final saavnMatch = await SaavnApiService.searchSongs("${playableSong.title} ${playableSong.artist}", limit: 1);
+          if (saavnMatch.isNotEmpty && saavnMatch.first.audioUrl.isNotEmpty) {
+            playableSong = playableSong.copyWith(audioUrl: saavnMatch.first.audioUrl);
+            debugPrint("Fast recovered YouTube song with JioSaavn CDN: ${playableSong.title}");
+          }
+        } catch (_) {}
+      }
     }
     // 2. JioSaavn Stream Resolution
     else if (playableSong.isIncomplete || playableSong.audioUrl.isEmpty) {
-      _isLoading = true;
-      notifyListeners();
       try {
         final full = await SaavnApiService.getSongById(playableSong.id);
         if (full != null && full.audioUrl.isNotEmpty) {
@@ -144,6 +150,19 @@ class AudioPlayerProvider with ChangeNotifier {
       }
     }
 
+    return playableSong;
+  }
+
+  Future<void> playSong(Song song, {List<Song>? contextPlaylist}) async {
+    if (contextPlaylist != null && contextPlaylist.isNotEmpty) {
+      _playlist = List.from(contextPlaylist);
+    }
+
+    _isLoading = true;
+    notifyListeners();
+
+    final Song playableSong = await _resolveSongStream(song);
+
     int index = _playlist.indexWhere((s) => s.id == playableSong.id);
     if (index == -1) {
       _playlist.insert(0, playableSong);
@@ -163,11 +182,7 @@ class AudioPlayerProvider with ChangeNotifier {
     if (songs.isEmpty) return;
     _playlist = List.from(songs);
     _currentIndex = initialIndex.clamp(0, _playlist.length - 1);
-    final song = _playlist[_currentIndex];
-    _playedSongIds.add(song.id);
-    _fetchLyricsForSong(song);
-    _prefetchSuggestionsIfNeeded(song);
-    await _startAudio(song.audioUrl);
+    await playSong(_playlist[_currentIndex]);
   }
 
   void _fetchLyricsForSong(Song song) async {
@@ -225,70 +240,82 @@ class AudioPlayerProvider with ChangeNotifier {
     _isPlaying = true;
     notifyListeners();
 
-    String playUrl = url.trim();
-
-    // 1. Local Device File Playback
-    if (playUrl.startsWith('/') || playUrl.startsWith('file://')) {
-      final cleanPath = playUrl.replaceFirst('file://', '');
-      try {
-        await _audioPlayer.stop();
-        await _audioPlayer.play(DeviceFileSource(cleanPath));
+    // Auto-dismiss loading spinner after 3.5s max so it NEVER hangs indefinitely
+    Timer? loadingTimeoutTimer;
+    loadingTimeoutTimer = Timer(const Duration(milliseconds: 3500), () {
+      if (_isLoading) {
         _isLoading = false;
-        _isPlaying = true;
-        _startSpectrumAnimation();
         notifyListeners();
-        return;
-      } catch (e) {
-        debugPrint('DeviceFileSource error ($cleanPath): $e');
       }
-    }
+    });
 
-    // 2. Network Playback via Candidate URLs
-    bool success = false;
-    final candidates = DriveEngineService.getStreamUrlCandidates(playUrl);
+    try {
+      String playUrl = url.trim();
 
-    for (final candidateUrl in candidates) {
-      if (candidateUrl.trim().isEmpty) continue;
-      try {
-        await _audioPlayer.stop();
-        await _audioPlayer.play(UrlSource(candidateUrl));
-        success = true;
-        debugPrint("Successfully started playing audio stream: $candidateUrl");
-        break;
-      } catch (e) {
-        debugPrint("Candidate playback error ($candidateUrl): $e");
-      }
-    }
-
-    // 3. YouTube Fallback Resolution if candidates failed
-    if (!success && currentSong != null) {
-      try {
-        final ytStream = await YtMusicService.resolveFallbackAudio(currentSong!.title, currentSong!.artist);
-        if (ytStream.isNotEmpty) {
+      // 1. Local Device File Playback
+      if (playUrl.startsWith('/') || playUrl.startsWith('file://')) {
+        final cleanPath = playUrl.replaceFirst('file://', '');
+        try {
           await _audioPlayer.stop();
-          await _audioPlayer.play(UrlSource(ytStream));
-          success = true;
-          debugPrint("Successfully recovered with YouTube audio fallback: ${currentSong!.title}");
+          await _audioPlayer.play(DeviceFileSource(cleanPath));
+          _isLoading = false;
+          _isPlaying = true;
+          _startSpectrumAnimation();
+          notifyListeners();
+          return;
+        } catch (e) {
+          debugPrint('DeviceFileSource error ($cleanPath): $e');
         }
-      } catch (err) {
-        debugPrint("YouTube fallback error: $err");
       }
-    }
 
-    // 4. Final safety fallback
-    if (!success) {
-      try {
-        await _audioPlayer.play(UrlSource('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'));
-        success = true;
-      } catch (err) {
-        debugPrint("Fallback audio error: $err");
+      // 2. Network Playback via Candidate URLs
+      bool success = false;
+      final candidates = DriveEngineService.getStreamUrlCandidates(playUrl);
+
+      for (final candidateUrl in candidates) {
+        if (candidateUrl.trim().isEmpty) continue;
+        try {
+          await _audioPlayer.stop();
+          await _audioPlayer.play(UrlSource(candidateUrl));
+          success = true;
+          debugPrint("Successfully started playing audio stream: $candidateUrl");
+          break;
+        } catch (e) {
+          debugPrint("Candidate playback error ($candidateUrl): $e");
+        }
       }
-    }
 
-    _isLoading = false;
-    _isPlaying = true;
-    _startSpectrumAnimation();
-    notifyListeners();
+      // 3. YouTube Fallback Resolution if candidates failed
+      if (!success && currentSong != null) {
+        try {
+          final ytStream = await YtMusicService.resolveFallbackAudio(currentSong!.title, currentSong!.artist);
+          if (ytStream.isNotEmpty) {
+            await _audioPlayer.stop();
+            await _audioPlayer.play(UrlSource(ytStream));
+            success = true;
+            debugPrint("Successfully recovered with YouTube audio fallback: ${currentSong!.title}");
+          }
+        } catch (err) {
+          debugPrint("YouTube fallback error: $err");
+        }
+      }
+
+      // 4. Final safety fallback
+      if (!success) {
+        try {
+          await _audioPlayer.play(UrlSource('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'));
+          success = true;
+        } catch (err) {
+          debugPrint("Fallback audio error: $err");
+        }
+      }
+    } finally {
+      loadingTimeoutTimer?.cancel();
+      _isLoading = false;
+      _isPlaying = true;
+      _startSpectrumAnimation();
+      notifyListeners();
+    }
   }
 
   Future<void> togglePlayPause() async {
@@ -329,11 +356,7 @@ class AudioPlayerProvider with ChangeNotifier {
       }
     }
 
-    final song = _playlist[_currentIndex];
-    _playedSongIds.add(song.id);
-    _fetchLyricsForSong(song);
-    _prefetchSuggestionsIfNeeded(song);
-    await _startAudio(song.audioUrl);
+    await playSong(_playlist[_currentIndex]);
   }
 
   Future<void> playPrevious() async {
@@ -350,11 +373,7 @@ class AudioPlayerProvider with ChangeNotifier {
       _currentIndex = _playlist.length - 1;
     }
 
-    final song = _playlist[_currentIndex];
-    _playedSongIds.add(song.id);
-    _fetchLyricsForSong(song);
-    _prefetchSuggestionsIfNeeded(song);
-    await _startAudio(song.audioUrl);
+    await playSong(_playlist[_currentIndex]);
   }
 
   void toggleShuffle() {

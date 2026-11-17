@@ -7,6 +7,7 @@ import '../models/playlist_model.dart';
 import '../providers/audio_player_provider.dart';
 import '../providers/music_library_provider.dart';
 import '../services/saavn_api_service.dart';
+import '../services/yt_music_service.dart';
 import '../theme/app_colors.dart';
 import 'playlist_detail_screen.dart';
 
@@ -76,6 +77,15 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
 
   Future<void> _fetchFullArtistProfile() async {
     try {
+      // If image is missing, fetch real YouTube DP in parallel
+      if (_imageUrl.isEmpty || _imageUrl.contains('unsplash.com')) {
+        YtMusicService.getArtistProfilePic(widget.artist.name).then((ytPic) {
+          if (ytPic.isNotEmpty && mounted) {
+            setState(() => _imageUrl = ytPic);
+          }
+        });
+      }
+
       String? artistId;
       // 1. If artist.id is numeric, use it directly
       if (int.tryParse(widget.artist.id) != null) {
@@ -110,11 +120,25 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
         }
       }
 
-      // Fallback: search songs directly by artist name
-      final songs = await SaavnApiService.searchSongs(widget.artist.name, limit: 30);
+      // Universal Global Fallback (Works for ANY artist in the world: English, Punjabi, Hindi, etc.)
+      final saavnSongsFuture = SaavnApiService.searchSongs(widget.artist.name, limit: 25);
+      final ytSongsFuture = YtMusicService.getArtistSongs(widget.artist.name, limit: 15);
+      final albumsFuture = SaavnApiService.searchAlbums(widget.artist.name, limit: 8);
+      final ytPicFuture = YtMusicService.getArtistProfilePic(widget.artist.name);
+
+      final saavnSongs = await saavnSongsFuture;
+      final ytSongs = await ytSongsFuture;
+      final albums = await albumsFuture;
+      final ytPic = await ytPicFuture;
+
+      final combined = [...saavnSongs, ...ytSongs];
       if (mounted) {
         setState(() {
-          _artistSongs = songs;
+          _artistSongs = combined;
+          _topAlbums = albums;
+          if (_imageUrl.isEmpty || _imageUrl.contains('unsplash.com')) {
+            _imageUrl = ytPic;
+          }
           _isLoading = false;
         });
       }

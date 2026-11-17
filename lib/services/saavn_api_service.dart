@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/song_model.dart';
 import '../models/playlist_model.dart';
+import '../models/artist_model.dart';
 
 class SaavnApiService {
   static const String baseUrl = 'https://jiosaavn-api-lc4i.onrender.com';
@@ -131,6 +132,78 @@ class SaavnApiService {
     }
   }
 
+  /// Search Artists with full profile metadata
+  /// Endpoint: /api/search/artists?query={name}&limit={limit}
+  static Future<List<Artist>> searchArtists(String query, {int limit = 5}) async {
+    final clean = query.trim();
+    if (clean.isEmpty) return [];
+    try {
+      final uri = Uri.parse('$baseUrl/api/search/artists?query=${Uri.encodeComponent(clean)}&limit=$limit');
+      final res = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return [];
+      final results = jsonDecode(res.body)['data']?['results'] as List? ?? [];
+      final List<Artist> artists = [];
+      for (final r in results) {
+        final id = r['id']?.toString() ?? '';
+        final name = Song.clean(r['name']?.toString() ?? '');
+        final images = r['image'] as List? ?? [];
+        String imgUrl = '';
+        if (images.isNotEmpty) {
+          imgUrl = images.last['url']?.toString() ?? '';
+        }
+        if (imgUrl.isEmpty && images.isNotEmpty) {
+          imgUrl = images.first['url']?.toString() ?? '';
+        }
+        final role = r['role']?.toString() ?? 'Artist';
+        artists.add(
+          Artist(
+            id: id,
+            name: name,
+            imageUrl: imgUrl.isNotEmpty ? imgUrl : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+            bio: '$name verified artist channel on EXOTIC MUSIC.',
+            language: '',
+            artistType: role,
+            genre: 'Popular',
+            isVerified: true,
+          ),
+        );
+      }
+      return artists;
+    } catch (e) {
+      debugPrint('SaavnApiService.searchArtists error: $e');
+      return [];
+    }
+  }
+
+  /// Search Albums
+  /// Endpoint: /api/search/albums?query={name}&limit={limit}
+  static Future<List<Map<String, dynamic>>> searchAlbums(String query, {int limit = 10}) async {
+    final clean = query.trim();
+    if (clean.isEmpty) return [];
+    try {
+      final uri = Uri.parse('$baseUrl/api/search/albums?query=${Uri.encodeComponent(clean)}&limit=$limit');
+      final res = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) return [];
+      final results = jsonDecode(res.body)['data']?['results'] as List? ?? [];
+      final List<Map<String, dynamic>> albums = [];
+      for (final a in results) {
+        final images = a['image'] as List? ?? [];
+        final imgUrl = images.isNotEmpty ? images.last['url']?.toString() ?? '' : '';
+        albums.add({
+          'id': a['id']?.toString() ?? '',
+          'title': Song.clean(a['name']?.toString() ?? a['title']?.toString() ?? 'Album'),
+          'artist': Song.clean(a['primaryArtists']?.toString() ?? a['artist']?.toString() ?? 'Various Artists'),
+          'coverUrl': imgUrl,
+          'year': a['year']?.toString() ?? '2026',
+        });
+      }
+      return albums;
+    } catch (e) {
+      debugPrint('SaavnApiService.searchAlbums error: $e');
+      return [];
+    }
+  }
+
   /// Search Artist ID by Name
   /// Endpoint: /api/search/artists?query={name}&limit=1
   static Future<String?> getArtistIdByName(String artistName) async {
@@ -227,19 +300,19 @@ class SaavnApiService {
   static Future<List<Song>> getFamousSongsForLanguage(String language, {int limit = 15}) async {
     final cleanLang = language.trim();
     final Map<String, String> playlistQueries = {
-      'Punjabi': 'Punjabi Superhits Top 50',
-      'Hindi': 'Hindi Superhits Top 50',
-      'International': 'English Global Top 50',
-      'English': 'English Global Top 50',
-      'Telugu': 'Telugu Superhits Top 50',
-      'Tamil': 'Tamil Superhits Top 50',
-      'Malayalam': 'Malayalam Top 50',
-      'Marathi': 'Marathi Top 50',
-      'Gujarati': 'Gujarati Top 50',
-      'Bengali': 'Bengali Top 50',
-      'Kannada': 'Kannada Top 50',
-      'Haryanvi': 'Haryanvi Top 50',
-      'Bhojpuri': 'Bhojpuri Top 50',
+      'Punjabi': 'Punjabi Superhits',
+      'Hindi': 'Hindi Superhits',
+      'International': 'English Global Hits',
+      'English': 'English Global Hits',
+      'Telugu': 'Telugu Superhits',
+      'Tamil': 'Tamil Superhits',
+      'Malayalam': 'Malayalam Hits',
+      'Marathi': 'Marathi Hits',
+      'Gujarati': 'Gujarati Hits',
+      'Bengali': 'Bengali Hits',
+      'Kannada': 'Kannada Hits',
+      'Haryanvi': 'Haryanvi Hits',
+      'Bhojpuri': 'Bhojpuri Hits',
     };
 
     final query = playlistQueries[cleanLang] ?? '$cleanLang Superhits';

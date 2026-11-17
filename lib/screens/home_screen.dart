@@ -11,6 +11,7 @@ import '../providers/music_library_provider.dart';
 import '../providers/admin_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/saavn_api_service.dart';
+import '../services/yt_music_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_drawer.dart';
 import 'artist_profile_screen.dart';
@@ -28,49 +29,25 @@ class _HomeScreenState extends State<HomeScreen> {
   String _musicSubFilter = 'All'; // 'All', 'Music', 'Following', 'Podcasts'
   bool _isLoadingTab = false;
 
-  // Real-time JioSaavn Feeds
-  List<Song> _saavnQuickPicks = [];
-  List<Song> _saavnTrendingHits = [];
-  List<Song> _saavnPunjabiHits = [];
-  List<Song> _saavnBollywoodHits = [];
-  List<Playlist> _saavnPlaylists = [];
-  List<Artist> _userFavoriteArtists = [];
+  // 12 Requested Dynamic Home Feed Sections (Strict User Sequence)
+  List<Song> _saavnQuickPicks = [];         // 1. QUICK PICKS FOR YOU
+  List<Artist> _userFavoriteArtists = [];   // 2. Your favourite artists
+  List<Song> _recommendedForYou = [];       // 3. Recommended for you
+  List<Song> _featuredReleases = [];        // 4. Featured Releases
+  List<Song> _recentFallback = [];          // 5. RECENT (fallback if history empty)
+  List<Map<String, dynamic>> _albumsYouLike = []; // 6. Albums you like
+  List<Song> _recommendedToday = [];        // 7. Recommended for today
+  List<Song> _toGetYouStarted = [];         // 8. To get you started
+  List<Artist> _suggestedArtists = [];      // 9. suggested artists
+  List<Song> _basedOnLatest = [];           // 10. based on your latest listening
+  List<Song> _trendingSongs = [];           // 11. trending
+  List<Song> _popularSongs = [];            // 12. popular
+
   bool _isFetchingSaavn = false;
   String _lang1Name = 'Hindi';
   String _lang2Name = 'Punjabi';
   String _primaryArtistName = 'Artist';
-
-  static final Map<String, String> _artistImages = {
-    'Karan Aujla': 'https://c.saavncdn.com/artists/Karan_Aujla_005_20260925061936_500x500.jpg',
-    'Diljit Dosanjh': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_005_20231025073054_500x500.jpg',
-    'Sidhu Moose Wala': 'https://c.saavncdn.com/artists/Sidhu_Moose_Wala_004_20250617183705_500x500.jpg',
-    'Arijit Singh': 'https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_500x500.jpg',
-    'Shubh': 'https://c.saavncdn.com/artists/Shubh_000_20220921112507_500x500.jpg',
-    'AP Dhillon': 'https://c.saavncdn.com/890/Excuses-English-2021-20210930112054-500x500.jpg',
-    'Yo Yo Honey Singh': 'https://c.saavncdn.com/artists/Yo_Yo_Honey_Singh_004_20260811095253_500x500.jpg',
-    'Badshah': 'https://c.saavncdn.com/artists/Badshah_006_20241118064015_500x500.jpg',
-    'DIVINE': 'https://c.saavncdn.com/artists/DIVINE_006_20250911071442_500x500.jpg',
-    'Divine': 'https://c.saavncdn.com/artists/DIVINE_006_20250911071442_500x500.jpg',
-    'The Weeknd': 'https://c.saavncdn.com/artists/The_Weeknd_002_20241003071400_500x500.jpg',
-    'Dua Lipa': 'https://c.saavncdn.com/artists/Dua_Lipa_004_20231120090922_500x500.jpg',
-    'Justin Bieber': 'https://c.saavncdn.com/artists/Justin_Bieber_005_20201127112218_500x500.jpg',
-    'Taylor Swift': 'https://c.saavncdn.com/artists/Taylor_Swift_003_20200226074119_500x500.jpg',
-    'BTS': 'https://c.saavncdn.com/artists/BTS_006_20260624192553_500x500.jpg',
-    'Ed Sheeran': 'https://c.saavncdn.com/artists/Ed_Sheeran_002_20250625073038_500x500.jpg',
-    'Drake': 'https://c.saavncdn.com/artists/Drake_006_20260520062317_500x500.jpg',
-    'Guru Randhawa': 'https://c.saavncdn.com/artists/Guru_Randhawa_005_20261026140443_500x500.jpg',
-    'Amrinder Gill': 'https://c.saavncdn.com/artists/Amrinder_Gill_500x500.jpg',
-    'B Praak': 'https://c.saavncdn.com/artists/B_Praak_001_20191118112005_500x500.jpg',
-    'Atif Aslam': 'https://c.saavncdn.com/169/Monsoon-Bollywood-Hits-Hindi-2023-20230616161232-500x500.jpg',
-    'Sunanda Sharma': 'https://c.saavncdn.com/545/Jaani-Tera-Naa-Punjabi-2017-500x500.jpg',
-    'Gippy Grewal': 'https://c.saavncdn.com/artists/Gippy_Grewal_004_20191118143844_500x500.jpg',
-    'Jass Manak': 'https://c.saavncdn.com/artists/Jass_Manak_001_20240119064204_500x500.jpg',
-    'Neha Kakkar': 'https://c.saavncdn.com/artists/Neha_Kakkar_007_20241212115832_500x500.jpg',
-    'Shreya Ghoshal': 'https://c.saavncdn.com/artists/Shreya_Ghoshal_007_20241101074144_500x500.jpg',
-    'Jubin Nautiyal': 'https://c.saavncdn.com/artists/Jubin_Nautiyal_003_20231130204020_500x500.jpg',
-    'Lata Mangeshkar': 'https://c.saavncdn.com/artists/Lata_Mangeshkar_004_20230623105323_500x500.jpg',
-    'Kishore Kumar': 'https://c.saavncdn.com/artists/Kishore_Kumar_500x500.jpg',
-  };
+  String _secondaryArtistName = 'Artist';
 
   @override
   void initState() {
@@ -88,6 +65,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final preferredLanguages = prefs.getStringList('user_preferred_languages') ?? [];
 
       final primaryArtist = preferredArtists.isNotEmpty ? preferredArtists.first : 'Arijit Singh';
+      final secondaryArtist = preferredArtists.length > 1 ? preferredArtists[1] : primaryArtist;
       final lang1 = preferredLanguages.isNotEmpty ? preferredLanguages[0] : 'Hindi';
       final lang2 = preferredLanguages.length > 1
           ? preferredLanguages[1]
@@ -96,45 +74,65 @@ class _HomeScreenState extends State<HomeScreen> {
       _lang1Name = lang1;
       _lang2Name = lang2;
       _primaryArtistName = primaryArtist;
+      _secondaryArtistName = secondaryArtist;
 
-      // 1. Build favorite artists models from user's selected preferences
-      final List<Artist> favArtists = preferredArtists.map((name) {
-        final img = _artistImages[name] ?? 'https://c.saavncdn.com/artists/Arijit_Singh_004_20241118063717_500x500.jpg';
-        return Artist(
-          id: 'artist_${name.toLowerCase().replaceAll(' ', '_')}',
-          name: name,
-          imageUrl: img,
-          bio: '$name verified artist discography on EXOTIC MUSIC.',
-          language: preferredLanguages.isNotEmpty ? preferredLanguages.first : 'Hindi',
-          artistType: 'Artist',
-          genre: 'Top Hits',
-          monthlyListeners: 18500000,
+      // 1. DYNAMIC ARTISTS: Fetch real DP from YouTube / JioSaavn (NO hardcoded maps!)
+      final List<Artist> favArtists = [];
+      for (final name in preferredArtists) {
+        final dp = await YtMusicService.getArtistProfilePic(name);
+        favArtists.add(
+          Artist(
+            id: 'artist_${name.toLowerCase().replaceAll(' ', '_')}',
+            name: name,
+            imageUrl: dp.isNotEmpty ? dp : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+            bio: '$name verified artist on EXOTIC MUSIC.',
+            language: lang1,
+            artistType: 'Artist',
+            genre: 'Popular',
+            monthlyListeners: 18500000,
+          ),
         );
-      }).toList();
+      }
 
-      // 2. Fetch 8 Quick Picks based strictly on user's selected primary artist
-      final quickSongs = await SaavnApiService.searchSongs(primaryArtist, limit: 8);
+      // 2. PARALLEL DYNAMIC FETCH for all 12 sections
+      final quickPicksFuture = SaavnApiService.searchSongs(primaryArtist, limit: 8);
+      final recommendedFuture = SaavnApiService.getFamousSongsForLanguage(lang1, limit: 10);
+      final featuredReleasesFuture = SaavnApiService.searchSongs('New Releases $lang1', limit: 10);
+      final recentFallbackFuture = SaavnApiService.searchSongs('Latest Tracks $lang1', limit: 10);
+      final albumsFuture = SaavnApiService.searchAlbums(primaryArtist, limit: 8);
+      final recommendedTodayFuture = SaavnApiService.searchSongs('Daily Hits $lang1', limit: 10);
+      final toGetStartedFuture = SaavnApiService.getFamousSongsForLanguage(lang2, limit: 10);
+      final suggestedArtistsFuture = SaavnApiService.searchArtists(lang1, limit: 8);
+      final basedOnLatestFuture = SaavnApiService.searchSongs(secondaryArtist, limit: 10);
+      final trendingFuture = SaavnApiService.searchSongs('Trending Hits India', limit: 12);
+      final popularFuture = SaavnApiService.searchSongs('Popular Superhits $lang1', limit: 12);
 
-      // 3. Fetch Trending 50 India
-      final trending = await SaavnApiService.searchSongs('Trending Top 50 India', limit: 12);
-
-      // 4. Fetch First Preferred Language Hits (Famous official songs)
-      final lang1Songs = await SaavnApiService.getFamousSongsForLanguage(lang1, limit: 12);
-
-      // 5. Fetch Second Preferred Language Hits (Famous official songs)
-      final lang2Songs = await SaavnApiService.getFamousSongsForLanguage(lang2, limit: 12);
-
-      // 6. Fetch Real JioSaavn Playlists
-      final playlists = await SaavnApiService.searchPlaylists('Top Hits India', limit: 10);
+      final quickSongs = await quickPicksFuture;
+      final recSongs = await recommendedFuture;
+      final featSongs = await featuredReleasesFuture;
+      final recFallback = await recentFallbackFuture;
+      final albums = await albumsFuture;
+      final recToday = await recommendedTodayFuture;
+      final startSongs = await toGetStartedFuture;
+      final sugArtists = await suggestedArtistsFuture;
+      final basedLatest = await basedOnLatestFuture;
+      final trendSongs = await trendingFuture;
+      final popSongs = await popularFuture;
 
       if (mounted) {
         setState(() {
           _userFavoriteArtists = favArtists;
           if (quickSongs.isNotEmpty) _saavnQuickPicks = quickSongs;
-          if (trending.isNotEmpty) _saavnTrendingHits = trending;
-          if (lang1Songs.isNotEmpty) _saavnPunjabiHits = lang1Songs;
-          if (lang2Songs.isNotEmpty) _saavnBollywoodHits = lang2Songs;
-          if (playlists.isNotEmpty) _saavnPlaylists = playlists;
+          if (recSongs.isNotEmpty) _recommendedForYou = recSongs;
+          if (featSongs.isNotEmpty) _featuredReleases = featSongs;
+          if (recFallback.isNotEmpty) _recentFallback = recFallback;
+          if (albums.isNotEmpty) _albumsYouLike = albums;
+          if (recToday.isNotEmpty) _recommendedToday = recToday;
+          if (startSongs.isNotEmpty) _toGetYouStarted = startSongs;
+          if (sugArtists.isNotEmpty) _suggestedArtists = sugArtists;
+          if (basedLatest.isNotEmpty) _basedOnLatest = basedLatest;
+          if (trendSongs.isNotEmpty) _trendingSongs = trendSongs;
+          if (popSongs.isNotEmpty) _popularSongs = popSongs;
           _isFetchingSaavn = false;
         });
       }
@@ -296,9 +294,42 @@ class _HomeScreenState extends State<HomeScreen> {
     List<Album> albums,
   ) {
     return [
-      // 1. Your Favorite Artists Carousel (Directly from User Onboarding/Settings Taste)
+      // 1. QUICK PICKS FOR YOU (Top)
+      _buildSectionTitle('QUICK PICKS FOR YOU'),
+      SliverPadding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        sliver: SliverGrid(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 3.0,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          delegate: SliverChildListDelegate(
+            _saavnQuickPicks.isNotEmpty
+                ? _saavnQuickPicks.take(8).map((song) {
+                    return _buildQuickTile(
+                      title: song.title,
+                      imageUrl: song.coverUrl,
+                      onTap: () => player.playSong(song, contextPlaylist: _saavnQuickPicks),
+                    );
+                  }).toList()
+                : List.generate(
+                    8,
+                    (i) => Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF242424),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
+          ),
+        ),
+      ),
+
+      // 2. Your favourite artists (Directly below Quick Picks)
       if (_userFavoriteArtists.isNotEmpty) ...[
-        _buildSectionTitle('Your Favorite Artists'),
+        _buildSectionTitle('Your favourite artists'),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 155,
@@ -354,193 +385,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
 
-      // 2. 8-Card Quick Picks Grid (Real Dynamic JioSaavn Songs from User Taste)
-      _buildSectionTitle('Quick Picks For You'),
-      SliverPadding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-        sliver: SliverGrid(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 3.0,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          delegate: SliverChildListDelegate(
-            _saavnQuickPicks.isNotEmpty
-                ? _saavnQuickPicks.take(8).map((song) {
-                    return _buildQuickTile(
-                      title: song.title,
-                      imageUrl: song.coverUrl,
-                      onTap: () => player.playSong(song, contextPlaylist: _saavnQuickPicks),
-                    );
-                  }).toList()
-                : List.generate(
-                    8,
-                    (i) => Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF242424),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(width: 54, color: const Color(0xFF333333)),
-                          const SizedBox(width: 10),
-                          Container(width: 70, height: 10, color: const Color(0xFF333333)),
-                        ],
-                      ),
-                    ),
-                  ),
-          ),
-        ),
-      ),
-
-      // Featured Playlist Banner (Highlights the top trending playlist banner)
-      if (_saavnPlaylists.isNotEmpty) ...[
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-            child: GestureDetector(
-              onTap: () {
-                final topPl = _saavnPlaylists.first;
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => PlaylistDetailScreen(playlist: topPl),
-                  ),
-                );
-              },
-              child: Container(
-                height: 180,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: AppColors.primary.withOpacity(0.25),
-                      blurRadius: 18,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Stack(
-                    fit: StackFit.expand,
-                    children: [
-                      Image.network(
-                        _saavnPlaylists.first.coverUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(color: const Color(0xFF242424)),
-                      ),
-                      Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.black.withOpacity(0.9),
-                              Colors.black.withOpacity(0.4),
-                              Colors.transparent,
-                            ],
-                            begin: Alignment.bottomLeft,
-                            end: Alignment.topRight,
-                          ),
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: const Text(
-                                'FEATURED PLAYLIST',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w900,
-                                  fontSize: 10,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              _saavnPlaylists.first.title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w900,
-                                fontSize: 18,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _saavnPlaylists.first.description,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12,
-                              ),
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              children: [
-                                ElevatedButton.icon(
-                                  icon: const Icon(Icons.play_arrow, color: Colors.black, size: 20),
-                                  label: const Text('Play Now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  ),
-                                  onPressed: () async {
-                                    final songs = await SaavnApiService.getPlaylistSongs(_saavnPlaylists.first.id);
-                                    if (songs.isNotEmpty) {
-                                      player.playPlaylist(songs);
-                                    }
-                                  },
-                                ),
-                                const SizedBox(width: 10),
-                                OutlinedButton(
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: Colors.white,
-                                    side: const BorderSide(color: Colors.white30),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                                  ),
-                                  onPressed: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => PlaylistDetailScreen(playlist: _saavnPlaylists.first),
-                                      ),
-                                    );
-                                  },
-                                  child: const Text('View Tracks', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
-
-      // 3. Trending Playlists Carousel (Real JioSaavn Playlists)
-      if (_saavnPlaylists.isNotEmpty) ...[
-        _buildSectionTitle('Trending Playlists'),
+      // 3. Recommended for you
+      if (_recommendedForYou.isNotEmpty) ...[
+        _buildSectionTitle('Recommended for you'),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 220,
@@ -548,17 +395,116 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _saavnPlaylists.length,
+              itemCount: _recommendedForYou.length,
               itemBuilder: (context, index) {
-                final pl = _saavnPlaylists[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => PlaylistDetailScreen(playlist: pl),
-                      ),
+                final s = _recommendedForYou[index];
+                return _buildRecommendedCard(
+                  type: 'FOR YOU',
+                  title: s.title,
+                  artist: s.artist,
+                  imageUrl: s.coverUrl,
+                  onTap: () => player.playSong(s, contextPlaylist: _recommendedForYou),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+
+      // 4. Featured Releases
+      if (_featuredReleases.isNotEmpty) ...[
+        _buildSectionTitle('Featured Releases'),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _featuredReleases.length,
+              itemBuilder: (context, index) {
+                final s = _featuredReleases[index];
+                return _buildRecommendedCard(
+                  type: 'NEW RELEASE',
+                  title: s.title,
+                  artist: s.artist,
+                  imageUrl: s.coverUrl,
+                  onTap: () => player.playSong(s, contextPlaylist: _featuredReleases),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+
+      // 5. RECENT
+      _buildSectionTitle('RECENT'),
+      SliverToBoxAdapter(
+        child: SizedBox(
+          height: 220,
+          child: (library.recentlyPlayedSongs.isNotEmpty)
+              ? ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: library.recentlyPlayedSongs.length,
+                  itemBuilder: (context, index) {
+                    final s = library.recentlyPlayedSongs[index];
+                    return _buildRecommendedCard(
+                      type: 'HISTORY',
+                      title: s.title,
+                      artist: s.artist,
+                      imageUrl: s.coverUrl,
+                      onTap: () => player.playSong(s, contextPlaylist: library.recentlyPlayedSongs),
                     );
+                  },
+                )
+              : ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _recentFallback.length,
+                  itemBuilder: (context, index) {
+                    final s = _recentFallback[index];
+                    return _buildRecommendedCard(
+                      type: 'RECENT HITS',
+                      title: s.title,
+                      artist: s.artist,
+                      imageUrl: s.coverUrl,
+                      onTap: () => player.playSong(s, contextPlaylist: _recentFallback),
+                    );
+                  },
+                ),
+        ),
+      ),
+
+      // 6. Albums you like
+      if (_albumsYouLike.isNotEmpty) ...[
+        _buildSectionTitle('Albums you like'),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 215,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _albumsYouLike.length,
+              itemBuilder: (context, index) {
+                final alb = _albumsYouLike[index];
+                final cover = alb['coverUrl']?.toString() ?? '';
+                final title = alb['title']?.toString() ?? 'Album';
+                final artist = alb['artist']?.toString() ?? '';
+                final year = alb['year']?.toString() ?? '';
+
+                return GestureDetector(
+                  onTap: () async {
+                    final albumData = await SaavnApiService.getAlbumDetails(alb['id']?.toString() ?? '');
+                    if (albumData != null && albumData['songs'] != null) {
+                      final albSongs = List<Song>.from(albumData['songs']);
+                      if (albSongs.isNotEmpty) {
+                        player.playPlaylist(albSongs);
+                      }
+                    }
                   },
                   child: Container(
                     width: 145,
@@ -569,28 +515,28 @@ class _HomeScreenState extends State<HomeScreen> {
                         ClipRRect(
                           borderRadius: BorderRadius.circular(8),
                           child: Image.network(
-                            pl.coverUrl,
+                            cover,
                             width: 145,
-                            height: 135,
+                            height: 140,
                             fit: BoxFit.cover,
                             errorBuilder: (_, __, ___) => Container(
                               width: 145,
-                              height: 135,
+                              height: 140,
                               color: const Color(0xFF282828),
-                              child: const Icon(Icons.queue_music, color: AppColors.primary, size: 40),
+                              child: const Icon(Icons.album, color: AppColors.primary, size: 40),
                             ),
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          pl.title,
+                          title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          pl.description,
+                          '$artist ${year.isNotEmpty ? "• $year" : ""}',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
@@ -605,9 +551,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
 
-      // 4. Trending Today in India (Real 320kbps JioSaavn Tracks)
-      if (_saavnTrendingHits.isNotEmpty) ...[
-        _buildSectionTitle('Trending Today in India'),
+      // 7. Recommended for today
+      if (_recommendedToday.isNotEmpty) ...[
+        _buildSectionTitle('Recommended for today'),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 220,
@@ -615,15 +561,15 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _saavnTrendingHits.length,
+              itemCount: _recommendedToday.length,
               itemBuilder: (context, index) {
-                final s = _saavnTrendingHits[index];
+                final s = _recommendedToday[index];
                 return _buildRecommendedCard(
-                  type: 'HOT TRACK',
+                  type: 'DAILY MIX',
                   title: s.title,
                   artist: s.artist,
                   imageUrl: s.coverUrl,
-                  onTap: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
+                  onTap: () => player.playSong(s, contextPlaylist: _recommendedToday),
                 );
               },
             ),
@@ -631,9 +577,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
 
-      // Live First Preferred Language Hits Carousel
-      if (_saavnPunjabiHits.isNotEmpty) ...[
-        _buildSectionTitle('Top $_lang1Name Hits'),
+      // 8. To get you started
+      if (_toGetYouStarted.isNotEmpty) ...[
+        _buildSectionTitle('To get you started'),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 220,
@@ -641,15 +587,15 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _saavnPunjabiHits.length,
+              itemCount: _toGetYouStarted.length,
               itemBuilder: (context, index) {
-                final s = _saavnPunjabiHits[index];
+                final s = _toGetYouStarted[index];
                 return _buildRecommendedCard(
-                  type: _lang1Name.toUpperCase(),
+                  type: 'ESSENTIALS',
                   title: s.title,
                   artist: s.artist,
                   imageUrl: s.coverUrl,
-                  onTap: () => player.playSong(s, contextPlaylist: _saavnPunjabiHits),
+                  onTap: () => player.playSong(s, contextPlaylist: _toGetYouStarted),
                 );
               },
             ),
@@ -657,9 +603,67 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
 
-      // Best of User Selected Primary Artist
-      if (_saavnQuickPicks.isNotEmpty && _primaryArtistName.isNotEmpty) ...[
-        _buildSectionTitle('Best of $_primaryArtistName'),
+      // 9. suggested artists
+      if (_suggestedArtists.isNotEmpty) ...[
+        _buildSectionTitle('suggested artists'),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 155,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _suggestedArtists.length,
+              itemBuilder: (context, index) {
+                final artist = _suggestedArtists[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ArtistProfileScreen(artist: artist),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 105,
+                    margin: const EdgeInsets.only(right: 14),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 44,
+                          backgroundColor: AppColors.surfaceLight,
+                          backgroundImage: NetworkImage(artist.imageUrl),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          artist.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Text(
+                          'Suggested',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+
+      // 10. based on your latest listening
+      if (_basedOnLatest.isNotEmpty) ...[
+        _buildSectionTitle('based on your latest listening'),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 220,
@@ -667,15 +671,15 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _saavnQuickPicks.length,
+              itemCount: _basedOnLatest.length,
               itemBuilder: (context, index) {
-                final s = _saavnQuickPicks[index];
+                final s = _basedOnLatest[index];
                 return _buildRecommendedCard(
                   type: 'FOR YOU',
                   title: s.title,
                   artist: s.artist,
                   imageUrl: s.coverUrl,
-                  onTap: () => player.playSong(s, contextPlaylist: _saavnQuickPicks),
+                  onTap: () => player.playSong(s, contextPlaylist: _basedOnLatest),
                 );
               },
             ),
@@ -683,9 +687,9 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
 
-      // Live Second Preferred Language Hits Carousel
-      if (_saavnBollywoodHits.isNotEmpty && _lang2Name != _lang1Name) ...[
-        _buildSectionTitle('Top $_lang2Name Hits'),
+      // 11. trending
+      if (_trendingSongs.isNotEmpty) ...[
+        _buildSectionTitle('tranding'),
         SliverToBoxAdapter(
           child: SizedBox(
             height: 220,
@@ -693,15 +697,15 @@ class _HomeScreenState extends State<HomeScreen> {
               scrollDirection: Axis.horizontal,
               physics: const BouncingScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _saavnBollywoodHits.length,
+              itemCount: _trendingSongs.length,
               itemBuilder: (context, index) {
-                final s = _saavnBollywoodHits[index];
+                final s = _trendingSongs[index];
                 return _buildRecommendedCard(
-                  type: _lang2Name.toUpperCase(),
+                  type: 'TRENDING',
                   title: s.title,
                   artist: s.artist,
                   imageUrl: s.coverUrl,
-                  onTap: () => player.playSong(s, contextPlaylist: _saavnBollywoodHits),
+                  onTap: () => player.playSong(s, contextPlaylist: _trendingSongs),
                 );
               },
             ),
@@ -709,16 +713,31 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ],
 
-      // Dynamic Catalog Sections (Best of Punjabi, Artists, etc.)
-      ...admin.homeSectionsList.expand((secTitle) => [
-        _buildSectionTitle(secTitle),
+      // 12. popular
+      if (_popularSongs.isNotEmpty) ...[
+        _buildSectionTitle('popular'),
         SliverToBoxAdapter(
           child: SizedBox(
-            height: secTitle.toLowerCase().contains('artist') ? 160 : 190,
-            child: _buildDynamicSectionContent(secTitle, artists, songs, playlists, albums, player),
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _popularSongs.length,
+              itemBuilder: (context, index) {
+                final s = _popularSongs[index];
+                return _buildRecommendedCard(
+                  type: 'POPULAR',
+                  title: s.title,
+                  artist: s.artist,
+                  imageUrl: s.coverUrl,
+                  onTap: () => player.playSong(s, contextPlaylist: _popularSongs),
+                );
+              },
+            ),
           ),
         ),
-      ]),
+      ],
     ];
   }
 
