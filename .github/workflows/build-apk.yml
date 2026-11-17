@@ -29,6 +29,17 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Cache Gradle dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            ~/.android/cache
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
       - name: Verify Flutter & Environment
         run: flutter doctor -v
 
@@ -36,7 +47,21 @@ jobs:
         run: flutter pub get
 
       - name: Build Release APK
-        run: flutter build apk --release --android-skip-build-dependency-validation
+        run: |
+          for attempt in 1 2 3; do
+            echo "Build attempt $attempt..."
+            if flutter build apk --release --android-skip-build-dependency-validation; then
+              echo "Build succeeded on attempt $attempt"
+              break
+            fi
+            if [ $attempt -lt 3 ]; then
+              echo "Build failed, retrying in 30 seconds..."
+              sleep 30
+            else
+              echo "Build failed after 3 attempts"
+              exit 1
+            fi
+          done
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
@@ -53,13 +78,14 @@ jobs:
           tag_name: v1.0.0-${{ github.run_number }}
           name: Exotic Music v1.0.0 (Build ${{ github.run_number }})
           body: |
-            ### 🎵 Exotic Music App Release (JioSaavn Live Streaming + Taste Onboarding)
-            - **JioSaavn Real-time Streaming**: Direct high-speed 320kbps lossless playback, dynamic multi-language search, live home feed, infinite suggestions queue!
-            - **First-Time User Onboarding Flow**: 3-step modern setup (Welcome, Language Preferences, Favorite Artist Selection).
-            - **Settings Taste Customizer**: Easily update preferred music languages and favorite artists anytime in Settings.
-            - **Brand New Orange Identity**: Updated app logo and launcher icons across all screen densities.
-            - **4 Core Tab Navigation**: Home, Search, Library, Settings.
-            - **Offline-ready Persistence**: Full Song JSON state caching for liked songs, playlists, and recently played.
+            ### 🎵 Exotic Music App — Build ${{ github.run_number }}
+            - **Hybrid Music Engine**: JioSaavn primary + YouTube direct audio fallback (transparent, ad-free)
+            - **Local Music Library**: Device audio files classified into All Songs, Artists, Albums, Favorites
+            - **Dynamic Taste Recommendations**: Personalized home feed based on selected languages & artists
+            - **Accurate Artist Classification**: Hindi, Punjabi & International properly separated
+            - **Smart Search**: Recent searches history + Your Favorites chips (no fake trending)
+            - **Lyrics Auto-Scroll**: Active lyric line smoothly centered in viewport
+            - **User Profile**: Shows real username from onboarding throughout the app
             - Download and install the APK below!
           files: build/app/outputs/flutter-apk/app-release.apk
         env:
