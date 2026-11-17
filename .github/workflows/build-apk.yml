@@ -53,12 +53,13 @@ jobs:
           tag_name: v1.0.0-${{ github.run_number }}
           name: Exotic Music v1.0.0 (Build ${{ github.run_number }})
           body: |
-            ### 🎵 Exotic Music App Release
-            - Core 4-Tab Navigation: Home, Search, Library, Settings
-            - Vibrant High-Energy Orange Theme across the entire app
-            - Fully functional, persisted Settings screen with 10 feature categories
-            - Standalone HTML/CSS/JS Admin Dashboard in `ADMIN PANNEL/`
-            - Firebase Realtime Database and Google Drive Direct Streaming Engine
+            ### 🎵 Exotic Music App Release (JioSaavn Live Streaming + Taste Onboarding)
+            - **JioSaavn Real-time Streaming**: Direct high-speed 320kbps lossless playback, dynamic multi-language search, live home feed, infinite suggestions queue!
+            - **First-Time User Onboarding Flow**: 3-step modern setup (Welcome, Language Preferences, Favorite Artist Selection).
+            - **Settings Taste Customizer**: Easily update preferred music languages and favorite artists anytime in Settings.
+            - **Brand New Orange Identity**: Updated app logo and launcher icons across all screen densities.
+            - **4 Core Tab Navigation**: Home, Search, Library, Settings.
+            - **Offline-ready Persistence**: Full Song JSON state caching for liked songs, playlists, and recently played.
             - Download and install the APK below!
           files: build/app/outputs/flutter-apk/app-release.apk
         env:

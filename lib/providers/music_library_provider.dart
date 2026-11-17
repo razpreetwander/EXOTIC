@@ -26,28 +26,67 @@ class MusicLibraryProvider with ChangeNotifier {
   Future<void> _loadFromPrefs() async {
     final prefs = await SharedPreferences.getInstance();
 
-    // Load liked song IDs
-    final likedIds = prefs.getStringList('liked_song_ids') ?? [];
-    _likedSongs = MusicLibraryProvider._getSongsFromIds(likedIds);
+    // 1. Load liked songs (prefer full JSON, fallback to IDs)
+    final likedJson = prefs.getStringList('liked_songs_full_json') ?? [];
+    if (likedJson.isNotEmpty) {
+      _likedSongs = likedJson.map((str) {
+        try {
+          final s = Song.fromJson(jsonDecode(str));
+          s.isLiked = true;
+          return s;
+        } catch (_) {
+          return null;
+        }
+      }).whereType<Song>().toList();
+    } else {
+      final likedIds = prefs.getStringList('liked_song_ids') ?? [];
+      _likedSongs = MusicLibraryProvider._getSongsFromIds(likedIds);
+    }
+
+    final likedIds = _likedSongs.map((s) => s.id).toSet();
     for (var song in MusicData.allSongs) {
       song.isLiked = likedIds.contains(song.id);
     }
 
-    // Load recently played IDs
-    final recentIds = prefs.getStringList('recent_song_ids') ?? [];
-    _recentlyPlayed = MusicLibraryProvider._getSongsFromIds(recentIds);
+    // 2. Load recently played songs
+    final recentJson = prefs.getStringList('recent_songs_full_json') ?? [];
+    if (recentJson.isNotEmpty) {
+      _recentlyPlayed = recentJson.map((str) {
+        try {
+          return Song.fromJson(jsonDecode(str));
+        } catch (_) {
+          return null;
+        }
+      }).whereType<Song>().toList();
+    } else {
+      final recentIds = prefs.getStringList('recent_song_ids') ?? [];
+      _recentlyPlayed = MusicLibraryProvider._getSongsFromIds(recentIds);
+    }
 
-    // Load custom playlists JSON
+    // 3. Load custom playlists JSON
     final playlistsJson = prefs.getStringList('user_playlists_json') ?? [];
     _userPlaylists = playlistsJson.map((str) {
       final map = jsonDecode(str);
-      final songIds = List<String>.from(map['songIds'] ?? []);
+      List<Song> songsList = [];
+      if (map['songsFull'] != null && map['songsFull'] is List) {
+        songsList = (map['songsFull'] as List).map((item) {
+          try {
+            return Song.fromJson(item is String ? jsonDecode(item) : Map<String, dynamic>.from(item));
+          } catch (_) {
+            return null;
+          }
+        }).whereType<Song>().toList();
+      } else {
+        final songIds = List<String>.from(map['songIds'] ?? []);
+        songsList = MusicLibraryProvider._getSongsFromIds(songIds);
+      }
+
       return Playlist(
         id: map['id'],
         title: map['title'],
         description: map['description'] ?? '',
         coverUrl: map['coverUrl'] ?? 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=800',
-        songs: MusicLibraryProvider._getSongsFromIds(songIds),
+        songs: songsList,
       );
     }).toList();
 
@@ -66,9 +105,21 @@ class MusicLibraryProvider with ChangeNotifier {
   Future<void> _savePrefs() async {
     final prefs = await SharedPreferences.getInstance();
 
+    // Save liked songs (both IDs and full JSON for 100% compatibility)
     await prefs.setStringList('liked_song_ids', _likedSongs.map((s) => s.id).toList());
-    await prefs.setStringList('recent_song_ids', _recentlyPlayed.map((s) => s.id).toList());
+    await prefs.setStringList(
+      'liked_songs_full_json',
+      _likedSongs.map((s) => jsonEncode(s.toJson())).toList(),
+    );
 
+    // Save recent songs
+    await prefs.setStringList('recent_song_ids', _recentlyPlayed.map((s) => s.id).toList());
+    await prefs.setStringList(
+      'recent_songs_full_json',
+      _recentlyPlayed.map((s) => jsonEncode(s.toJson())).toList(),
+    );
+
+    // Save user playlists
     final playlistsData = _userPlaylists.map((pl) {
       return jsonEncode({
         'id': pl.id,
@@ -76,6 +127,7 @@ class MusicLibraryProvider with ChangeNotifier {
         'description': pl.description,
         'coverUrl': pl.coverUrl,
         'songIds': pl.songs.map((s) => s.id).toList(),
+        'songsFull': pl.songs.map((s) => s.toJson()).toList(),
       });
     }).toList();
     await prefs.setStringList('user_playlists_json', playlistsData);

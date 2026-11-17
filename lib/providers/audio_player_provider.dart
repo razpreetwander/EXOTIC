@@ -5,6 +5,7 @@ import 'package:audioplayers/audioplayers.dart';
 import '../models/song_model.dart';
 import '../data/music_data.dart';
 import '../services/drive_engine_service.dart';
+import '../services/saavn_api_service.dart';
 
 enum LoopState { off, loopAll, loopOne }
 
@@ -97,14 +98,31 @@ class AudioPlayerProvider with ChangeNotifier {
     if (contextPlaylist != null && contextPlaylist.isNotEmpty) {
       _playlist = List.from(contextPlaylist);
     }
+
+    Song playableSong = song;
+    if (playableSong.isIncomplete || playableSong.audioUrl.isEmpty) {
+      _isLoading = true;
+      notifyListeners();
+      try {
+        final full = await SaavnApiService.getSongById(playableSong.id);
+        if (full != null && full.audioUrl.isNotEmpty) {
+          playableSong = full;
+        }
+      } catch (e) {
+        debugPrint('Error resolving JioSaavn song stream: $e');
+      }
+    }
+
     int index = _playlist.indexWhere((s) => s.id == song.id);
     if (index == -1) {
-      _playlist.insert(0, song);
+      _playlist.insert(0, playableSong);
       index = 0;
+    } else {
+      _playlist[index] = playableSong;
     }
     _currentIndex = index;
 
-    await _startAudio(song.audioUrl);
+    await _startAudio(playableSong.audioUrl);
   }
 
   Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
@@ -229,11 +247,21 @@ class AudioPlayerProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  void _handleTrackCompletion() {
+  void _handleTrackCompletion() async {
     if (_loopState == LoopState.loopOne && currentSong != null) {
       seek(Duration.zero);
       _audioPlayer.resume();
     } else {
+      // Auto-play / Radio queue: fetch similar vibe songs from JioSaavn if near end
+      if (_currentIndex >= _playlist.length - 1 && currentSong != null) {
+        try {
+          final suggestions = await SaavnApiService.getSuggestions(currentSong!.id, limit: 10);
+          if (suggestions.isNotEmpty) {
+            _playlist.addAll(suggestions);
+            notifyListeners();
+          }
+        } catch (_) {}
+      }
       playNext();
     }
   }

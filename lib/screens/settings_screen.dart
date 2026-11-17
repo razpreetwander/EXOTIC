@@ -4,6 +4,7 @@ import '../providers/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/equalizer_sheet.dart';
 import '../widgets/device_picker_sheet.dart';
+import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -104,6 +105,21 @@ class SettingsScreen extends StatelessWidget {
                     title: 'Account',
                     subtitle: '${settings.username} • ${settings.email}',
                     onTap: () => _showAccountDialog(context, settings),
+                  ),
+
+                  // Music Preferences & Onboarding
+                  _buildSettingTile(
+                    icon: Icons.tune,
+                    title: 'Music taste & preferences',
+                    subtitle: 'Choose preferred languages & favorite artists',
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const OnboardingScreen(isResetMode: true),
+                        ),
+                      );
+                    },
                   ),
 
                   // 2. Content & Display
