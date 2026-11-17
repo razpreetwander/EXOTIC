@@ -131,27 +131,56 @@ class SaavnApiService {
     }
   }
 
-  /// 6. Artist Profile Details, Top Songs & Albums
+  /// Search Artist ID by Name
+  /// Endpoint: /api/search/artists?query={name}&limit=1
+  static Future<String?> getArtistIdByName(String artistName) async {
+    if (artistName.trim().isEmpty) return null;
+    try {
+      final uri = Uri.parse('$baseUrl/api/search/artists?query=${Uri.encodeComponent(artistName.trim())}&limit=1');
+      final res = await http.get(uri).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) return null;
+      final results = jsonDecode(res.body)['data']?['results'] as List? ?? [];
+      if (results.isNotEmpty) {
+        return results.first['id']?.toString();
+      }
+    } catch (e) {
+      debugPrint('SaavnApiService.getArtistIdByName error: $e');
+    }
+    return null;
+  }
+
+  /// 6. Artist Profile Details, Top Songs, Albums & Similar Artists
   /// Endpoint: /api/artists/{id}?songCount=20&albumCount=10
   static Future<Map<String, dynamic>?> getArtistDetails(String artistId) async {
     if (artistId.trim().isEmpty) return null;
 
     try {
-      final uri = Uri.parse('$baseUrl/api/artists/${artistId.trim()}?songCount=20&albumCount=10');
+      final uri = Uri.parse('$baseUrl/api/artists/${artistId.trim()}?songCount=25&albumCount=10');
       final res = await http.get(uri).timeout(const Duration(seconds: 12));
       if (res.statusCode != 200) return null;
 
       final data = jsonDecode(res.body)['data'] ?? {};
       final List rawTopSongs = data['topSongs'] ?? [];
+      final List rawSingles = data['singles'] ?? [];
       final List images = data['image'] as List? ?? [];
       final String image = images.isNotEmpty ? images.last['url'] : '';
+
+      String bioText = '';
+      if (data['bio'] is List && (data['bio'] as List).isNotEmpty) {
+        bioText = (data['bio'] as List).first?['text']?.toString() ?? '';
+      } else if (data['bio'] != null) {
+        bioText = data['bio'].toString();
+      }
 
       return {
         'id': data['id'],
         'name': Song.clean(data['name']),
         'imageUrl': image,
         'followerCount': data['followerCount'] ?? 0,
+        'isVerified': data['isVerified'] ?? true,
+        'bio': bioText,
         'topSongs': rawTopSongs.map((e) => Song.fromSaavnJson(e)).toList(),
+        'singles': rawSingles.map((e) => Song.fromSaavnJson(e)).toList(),
         'topAlbums': data['topAlbums'] ?? [],
         'similarArtists': data['similarArtists'] ?? [],
       };

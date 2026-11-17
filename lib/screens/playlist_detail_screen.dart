@@ -38,7 +38,13 @@ class _PlaylistDetailScreenState extends State<PlaylistDetailScreen> {
     }
 
     try {
-      final fetched = await SaavnApiService.getPlaylistSongs(widget.playlist.id);
+      var fetched = await SaavnApiService.getPlaylistSongs(widget.playlist.id);
+      if (fetched.isEmpty) {
+        final albumData = await SaavnApiService.getAlbumDetails(widget.playlist.id);
+        if (albumData != null && albumData['songs'] != null) {
+          fetched = List<Song>.from(albumData['songs']);
+        }
+      }
       if (mounted) {
         setState(() {
           _songs = fetched;
