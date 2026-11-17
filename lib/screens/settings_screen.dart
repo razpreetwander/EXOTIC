@@ -4,6 +4,7 @@ import '../providers/settings_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/equalizer_sheet.dart';
 import '../widgets/device_picker_sheet.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'onboarding_screen.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -192,7 +193,7 @@ class SettingsScreen extends StatelessWidget {
                   _buildSettingTile(
                     icon: Icons.info_outline,
                     title: 'About and support',
-                    subtitle: 'Version 2.5.0 • Google Drive Direct Engine',
+                    subtitle: 'Version 2.5.0 • JioSaavn Realtime 320k Lossless Engine',
                     onTap: () => _showAboutDialog(context),
                   ),
 
@@ -771,9 +772,17 @@ class SettingsScreen extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel', style: TextStyle(color: Colors.white54))),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged out successfully')));
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setBool('is_first_time_user', true);
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+                  (route) => false,
+                );
+              }
             },
             child: const Text('Log Out'),
           ),
