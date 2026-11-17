@@ -155,6 +155,15 @@ class SettingsProvider extends ChangeNotifier {
     await prefs.setString('setting_email', mail);
   }
 
+  Future<void> updateProfile({required String username, required String email}) async {
+    _username = username;
+    _email = email;
+    notifyListeners();
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('setting_username', username);
+    await prefs.setString('setting_email', email);
+  }
+
   Future<void> setCrossfade(double seconds) async {
     _crossfadeDuration = seconds;
     notifyListeners();
