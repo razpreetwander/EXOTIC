@@ -481,10 +481,10 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                       onTap: () {
                         final albumPlaylist = Playlist(
                           id: album['id']?.toString() ?? '',
-                          name: title,
+                          title: title,
+                          description: 'Album by ${artist.name} ($year)',
                           coverUrl: cover,
-                          ownerName: artist.name,
-                          songCount: int.tryParse(album['songCount']?.toString() ?? '') ?? 10,
+                          genreTag: 'ALBUM',
                           songs: [],
                         );
                         Navigator.push(
