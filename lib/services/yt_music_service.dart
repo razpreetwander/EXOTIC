@@ -58,6 +58,8 @@ class YtMusicService {
             duration: video.duration ?? const Duration(minutes: 3),
             coverUrl: thumb,
             audioUrl: '', // Resolved dynamically upon playback
+            genre: '',
+            language: '',
           ),
         );
 
