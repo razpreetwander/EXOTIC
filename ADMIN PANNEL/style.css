@@ -11,22 +11,23 @@
   --bg-input: rgba(255, 255, 255, 0.05);
   --bg-input-focus: rgba(255, 255, 255, 0.08);
 
-  --accent-green: #00ff87;
-  --accent-cyan: #00dfd8;
+  --accent-green: #ff7a00;
+  --accent-orange: #ff7a00;
+  --accent-cyan: #ff9e42;
   --accent-purple: #9d4edd;
   --accent-red: #ff4757;
   --accent-yellow: #ffa502;
   --accent-blue: #1e90ff;
 
-  --gradient-accent: linear-gradient(135deg, #00ff87 0%, #00dfd8 100%);
-  --gradient-purple: linear-gradient(135deg, #9d4edd 0%, #00dfd8 100%);
+  --gradient-accent: linear-gradient(135deg, #ff7a00 0%, #ff9e42 100%);
+  --gradient-purple: linear-gradient(135deg, #9d4edd 0%, #ff9e42 100%);
   --gradient-fire: linear-gradient(135deg, #ff4757 0%, #ffa502 100%);
 
   --text-main: #f8fafc;
   --text-secondary: #94a3b8;
   --text-muted: #64748b;
   --border-glass: rgba(255, 255, 255, 0.08);
-  --border-focus: rgba(0, 255, 135, 0.5);
+  --border-focus: rgba(255, 122, 0, 0.5);
 
   --sidebar-width: 260px;
   --player-height: 80px;

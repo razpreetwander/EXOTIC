@@ -226,12 +226,12 @@ class MusicData {
   ];
 
   static final List<Map<String, String>> genres = [
-    {'name': 'Pop', 'color': '0xFF1DB954'},
+    {'name': 'Pop', 'color': '0xFFFF7A00'},
     {'name': 'Bollywood', 'color': '0xFFE91E63'},
     {'name': 'Electronic', 'color': '0xFF2D9CDB'},
     {'name': 'Dance', 'color': '0xFF8E44AD'},
     {'name': 'Synthwave', 'color': '0xFFF2994A'},
-    {'name': 'Folk / Indie', 'color': '0xFF27AE60'},
+    {'name': 'Folk / Indie', 'color': '0xFFFF9E42'},
     {'name': 'Hip-Hop', 'color': '0xFFEB5757'},
     {'name': 'Rock', 'color': '0xFF9B51E0'},
   ];

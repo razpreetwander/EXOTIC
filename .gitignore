@@ -52,3 +52,4 @@ android/app/*.dex
 android/app/*.arsc
 android/app/*.properties
 !android/app/gradle.properties
+.ide/

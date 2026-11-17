@@ -44,7 +44,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                     onTap: widget.onOpenDrawer ?? () => Scaffold.of(context).openDrawer(),
                     child: const CircleAvatar(
                       radius: 18,
-                      backgroundColor: Color(0xFF00FF87),
+                      backgroundColor: AppColors.primary,
                       child: Text(
                         'A',
                         style: TextStyle(color: Colors.black, fontWeight: FontWeight.w900, fontSize: 16),
@@ -231,7 +231,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF00FF87) : AppColors.surface,
+          color: isSelected ? AppColors.primary : AppColors.surface,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: isSelected ? Colors.transparent : Colors.white12),
         ),
@@ -278,7 +278,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             const SizedBox(height: 12),
             ListTile(
               title: const Text('Recents', style: TextStyle(color: Colors.white)),
-              trailing: _sortBy == 'Recents' ? const Icon(Icons.check, color: Color(0xFF00FF87)) : null,
+              trailing: _sortBy == 'Recents' ? const Icon(Icons.check, color: AppColors.primary) : null,
               onTap: () {
                 setState(() => _sortBy = 'Recents');
                 Navigator.pop(ctx);
@@ -286,7 +286,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ),
             ListTile(
               title: const Text('Recently Added', style: TextStyle(color: Colors.white)),
-              trailing: _sortBy == 'Recently Added' ? const Icon(Icons.check, color: Color(0xFF00FF87)) : null,
+              trailing: _sortBy == 'Recently Added' ? const Icon(Icons.check, color: AppColors.primary) : null,
               onTap: () {
                 setState(() => _sortBy = 'Recently Added');
                 Navigator.pop(ctx);
@@ -294,7 +294,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
             ),
             ListTile(
               title: const Text('Alphabetical (A-Z)', style: TextStyle(color: Colors.white)),
-              trailing: _sortBy == 'Alphabetical' ? const Icon(Icons.check, color: Color(0xFF00FF87)) : null,
+              trailing: _sortBy == 'Alphabetical' ? const Icon(Icons.check, color: AppColors.primary) : null,
               onTap: () {
                 setState(() => _sortBy = 'Alphabetical');
                 Navigator.pop(ctx);
@@ -321,7 +321,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done', style: TextStyle(color: Color(0xFF00FF87)))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Done', style: TextStyle(color: AppColors.primary))),
         ],
       ),
     );
@@ -345,7 +345,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                 leading: CircleAvatar(radius: 18, backgroundImage: NetworkImage(artist.imageUrl)),
                 title: Text(artist.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                 trailing: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF00FF87), foregroundColor: Colors.black),
+                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.black),
                   onPressed: () {
                     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Following ${artist.name}!')));
                   },
@@ -384,7 +384,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                       title: Text(pod.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                       subtitle: Text('${pod.publisher} • ${pod.episodes.length} episodes', style: const TextStyle(color: Colors.white54, fontSize: 11)),
                       trailing: IconButton(
-                        icon: const Icon(Icons.play_circle_fill, color: Color(0xFF00FF87), size: 28),
+                        icon: const Icon(Icons.play_circle_fill, color: AppColors.primary, size: 28),
                         onPressed: () {
                           if (pod.episodes.isNotEmpty) {
                             player.playPlaylist(pod.episodes);
@@ -414,7 +414,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
         title: const Text('Live Concerts & Events', style: TextStyle(color: Colors.white, fontSize: 16)),
         content: const Text('No upcoming live tour dates near your location right now.', style: TextStyle(color: Colors.white70, fontSize: 13)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK', style: TextStyle(color: Color(0xFF00FF87)))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK', style: TextStyle(color: AppColors.primary))),
         ],
       ),
     );

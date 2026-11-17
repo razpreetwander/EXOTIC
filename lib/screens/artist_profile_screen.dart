@@ -116,8 +116,8 @@ class _ArtistProfileScreenState extends State<ArtistProfileScreen> {
                   const SizedBox(width: 12),
                   OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: _isFollowing ? const Color(0xFF00FF87) : Colors.white30),
-                      foregroundColor: _isFollowing ? const Color(0xFF00FF87) : Colors.white,
+                      side: BorderSide(color: _isFollowing ? AppColors.primary : Colors.white30),
+                      foregroundColor: _isFollowing ? AppColors.primary : Colors.white,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
                     ),
                     onPressed: () {

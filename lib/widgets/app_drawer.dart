@@ -148,7 +148,7 @@ class AppDrawer extends StatelessWidget {
         title: const Row(
           children: [
             CircleAvatar(
-              backgroundColor: Color(0xFF00FF87),
+              backgroundColor: AppColors.primary,
               child: Text('A', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
             ),
             SizedBox(width: 12),
@@ -159,7 +159,7 @@ class AppDrawer extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Account Tier: VIP Premium Member', style: TextStyle(color: Color(0xFF00FF87), fontWeight: FontWeight.bold, fontSize: 13)),
+            const Text('Account Tier: VIP Premium Member', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 13)),
             const SizedBox(height: 8),
             Text('Liked Songs: ${lib.likedSongs.length}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
             Text('Custom Playlists: ${lib.userPlaylists.length}', style: const TextStyle(color: Colors.white70, fontSize: 12)),
@@ -181,7 +181,7 @@ class AppDrawer extends StatelessWidget {
         title: const Text('Add / Switch Account', style: TextStyle(color: Colors.white, fontSize: 16)),
         content: const Text('Multi-account sync enabled. You are currently logged in as primary account: Armaansingh.', style: TextStyle(color: Colors.white70, fontSize: 13)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK', style: TextStyle(color: Color(0xFF00FF87)))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK', style: TextStyle(color: AppColors.primary))),
         ],
       ),
     );
@@ -229,7 +229,7 @@ class AppDrawer extends StatelessWidget {
         backgroundColor: const Color(0xFF1E1F24),
         title: const Row(
           children: [
-            Icon(Icons.campaign, color: Color(0xFF00FF87)),
+            Icon(Icons.campaign, color: AppColors.primary),
             SizedBox(width: 8),
             Text('Live App Broadcasts', style: TextStyle(color: Colors.white, fontSize: 16)),
           ],
@@ -239,7 +239,7 @@ class AppDrawer extends StatelessWidget {
           style: const TextStyle(color: Colors.white70, fontSize: 13),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Got it', style: TextStyle(color: Color(0xFF00FF87)))),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Got it', style: TextStyle(color: AppColors.primary))),
         ],
       ),
     );

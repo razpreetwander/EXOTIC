@@ -239,7 +239,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                 ),
               ),
 
-              // Main Audio Player Controls (Spotify Green Play Circle)
+              // Main Audio Player Controls (Vibrant Orange Play Circle)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
@@ -257,7 +257,7 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
                       icon: const Icon(Icons.skip_previous, color: AppColors.textPrimary, size: 36),
                       onPressed: () => playerProvider.playPrevious(),
                     ),
-                    // Main Play/Pause Button (#1DB954)
+                    // Main Play/Pause Button (Vibrant Orange)
                     GestureDetector(
                       onTap: () => playerProvider.togglePlayPause(),
                       child: Container(

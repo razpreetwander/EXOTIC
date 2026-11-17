@@ -63,7 +63,7 @@ class _DevicePickerSheetState extends State<DevicePickerSheet> {
           const SizedBox(height: 6),
           Text(
             'Active playback stream: $currentConnected',
-            style: const TextStyle(color: Color(0xFF00FF87), fontSize: 12, fontWeight: FontWeight.bold),
+            style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 16),
 
@@ -81,19 +81,19 @@ class _DevicePickerSheetState extends State<DevicePickerSheet> {
                   decoration: BoxDecoration(
                     color: isSelected ? AppColors.cardBg : Colors.transparent,
                     borderRadius: BorderRadius.circular(14),
-                    border: isSelected ? Border.all(color: const Color(0xFF00FF87)) : null,
+                    border: isSelected ? Border.all(color: AppColors.primary) : null,
                   ),
                   child: ListTile(
                     leading: Image.asset(
                       dev['icon']!,
                       width: 32,
                       height: 32,
-                      errorBuilder: (_, __, ___) => const Icon(Icons.devices, color: Color(0xFF00FF87)),
+                      errorBuilder: (_, __, ___) => const Icon(Icons.devices, color: AppColors.primary),
                     ),
                     title: Text(
                       dev['name']!,
                       style: TextStyle(
-                        color: isSelected ? const Color(0xFF00FF87) : AppColors.textPrimary,
+                        color: isSelected ? AppColors.primary : AppColors.textPrimary,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                         fontSize: 14,
                       ),
@@ -103,7 +103,7 @@ class _DevicePickerSheetState extends State<DevicePickerSheet> {
                       style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
                     ),
                     trailing: isSelected
-                        ? const Icon(Icons.volume_up, color: Color(0xFF00FF87), size: 22)
+                        ? const Icon(Icons.volume_up, color: AppColors.primary, size: 22)
                         : null,
                     onTap: () {
                       adminProvider.setConnectedDevice(dev['name']!);

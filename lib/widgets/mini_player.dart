@@ -102,7 +102,7 @@ class MiniPlayer extends StatelessWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 0.5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFF1ED760),
+                                  color: AppColors.primary,
                                   borderRadius: BorderRadius.circular(2),
                                 ),
                                 child: const Text(
@@ -150,7 +150,7 @@ class MiniPlayer extends StatelessWidget {
                     IconButton(
                       icon: Icon(
                         currentSong.isLiked ? Icons.check_circle : Icons.add_circle_outline,
-                        color: currentSong.isLiked ? const Color(0xFF1ED760) : Colors.white70,
+                        color: currentSong.isLiked ? AppColors.primary : Colors.white70,
                         size: 21,
                       ),
                       padding: const EdgeInsets.symmetric(horizontal: 6),
@@ -167,7 +167,7 @@ class MiniPlayer extends StatelessWidget {
                               height: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Color(0xFF1ED760),
+                                color: AppColors.primary,
                               ),
                             )
                           : Icon(
@@ -191,7 +191,7 @@ class MiniPlayer extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: progress,
                 backgroundColor: Colors.white10,
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1ED760)),
+                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
                 minHeight: 2,
               ),
             ),

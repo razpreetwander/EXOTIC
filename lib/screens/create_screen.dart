@@ -32,7 +32,7 @@ class CreateScreen extends StatelessWidget {
                 icon: Icons.music_note,
                 title: 'Playlist',
                 subtitle: 'Build a playlist with songs, podcasts or audiobooks.',
-                color: const Color(0xFF1ED760),
+                color: AppColors.primary,
                 onTap: () {
                   showDialog(context: context, builder: (_) => const CreatePlaylistDialog());
                 },

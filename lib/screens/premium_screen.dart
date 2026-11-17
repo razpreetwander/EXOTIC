@@ -20,12 +20,12 @@ class PremiumScreen extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1ED760).withOpacity(0.15),
+                  color: AppColors.primary.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
                   'LIMITED TIME OFFER',
-                  style: TextStyle(color: Color(0xFF1ED760), fontSize: 10, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold),
                 ),
               ),
               const SizedBox(height: 12),
@@ -118,7 +118,7 @@ class PremiumScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFF1ED760), size: 24),
+          Icon(icon, color: AppColors.primary, size: 24),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -168,7 +168,7 @@ class PremiumScreen extends StatelessWidget {
             height: 46,
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1ED760),
+                backgroundColor: AppColors.primary,
                 foregroundColor: Colors.black,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
               ),

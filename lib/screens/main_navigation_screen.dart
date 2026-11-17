@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../providers/admin_provider.dart';
 import '../theme/app_colors.dart';
 import '../widgets/mini_player.dart';
 import 'home_screen.dart';
 import 'search_screen.dart';
 import 'library_screen.dart';
-import 'premium_screen.dart';
-import 'create_screen.dart';
+import 'settings_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -23,8 +20,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     HomeScreen(),
     SearchScreen(),
     LibraryScreen(),
-    PremiumScreen(),
-    CreateScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -55,7 +51,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       });
                     },
                     backgroundColor: Colors.transparent,
-                    selectedItemColor: Colors.white,
+                    selectedItemColor: AppColors.primary,
                     unselectedItemColor: const Color(0xFFA7A7A7),
                     type: BottomNavigationBarType.fixed,
                     showUnselectedLabels: true,
@@ -75,17 +71,12 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
                       BottomNavigationBarItem(
                         icon: Icon(Icons.library_music_outlined),
                         activeIcon: Icon(Icons.library_music),
-                        label: 'Your Library',
+                        label: 'Library',
                       ),
                       BottomNavigationBarItem(
-                        icon: Icon(Icons.workspace_premium_outlined),
-                        activeIcon: Icon(Icons.workspace_premium),
-                        label: 'Premium',
-                      ),
-                      BottomNavigationBarItem(
-                        icon: Icon(Icons.add_circle_outline),
-                        activeIcon: Icon(Icons.add_circle),
-                        label: 'Create',
+                        icon: Icon(Icons.settings_outlined),
+                        activeIcon: Icon(Icons.settings),
+                        label: 'Settings',
                       ),
                     ],
                   ),

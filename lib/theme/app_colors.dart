@@ -11,15 +11,16 @@ class AppColors {
   static const Color glassBorder = Color(0x1AFFFFFF);
 
   // Brand Accents
-  static const Color primary = Color(0xFF1DB954); // Official EXOTIC Green
-  static const Color secondary = Color(0xFF1ED760); // Bright Neon Green
+  static const Color primary = Color(0xFFFF7A00); // Official EXOTIC Vibrant Orange
+  static const Color secondary = Color(0xFFFF9E42); // Bright Neon Orange
   static const Color accentPink = Color(0xFFE91E63);
   static const Color accentBlue = Color(0xFF2D9CDB);
   static const Color accentPurple = Color(0xFF8E44AD);
+  static const Color accentOrange = Color(0xFFFF7A00);
 
   // Gradients
   static const LinearGradient primaryGradient = LinearGradient(
-    colors: [Color(0xFF1DB954), Color(0xFF1ED760)],
+    colors: [Color(0xFFFF7A00), Color(0xFFFF9E42)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -36,5 +37,6 @@ class AppColors {
   static const Color textMuted = Color(0xFF727272);
 
   // Interactive
-  static const Color activeGreen = Color(0xFF1DB954);
+  static const Color activeGreen = Color(0xFFFF7A00); // Orange theme
+  static const Color activeOrange = Color(0xFFFF7A00);
 }

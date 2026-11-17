@@ -54,10 +54,12 @@ jobs:
           name: Exotic Music v1.0.0 (Build ${{ github.run_number }})
           body: |
             ### 🎵 Exotic Music App Release
-            - Spotify-like redesign (8 quick picks, filter chips, mini-player, 5 tabs)
-            - Built-in Admin Panel moved to standalone HTML website in `ADMIN PANNEL/`
-            - Firebase Realtime Database live streaming
-            - Download and install `Exotic-Music.apk` below!
+            - Core 4-Tab Navigation: Home, Search, Library, Settings
+            - Vibrant High-Energy Orange Theme across the entire app
+            - Fully functional, persisted Settings screen with 10 feature categories
+            - Standalone HTML/CSS/JS Admin Dashboard in `ADMIN PANNEL/`
+            - Firebase Realtime Database and Google Drive Direct Streaming Engine
+            - Download and install the APK below!
           files: build/app/outputs/flutter-apk/app-release.apk
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

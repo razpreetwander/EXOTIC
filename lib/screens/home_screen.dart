@@ -69,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () => Scaffold.of(btnCtx).openDrawer(),
                       child: const CircleAvatar(
                         radius: 17,
-                        backgroundColor: Color(0xFF1ED760),
+                        backgroundColor: AppColors.primary,
                         child: Text(
                           'P',
                           style: TextStyle(
@@ -114,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         height: 44,
                         child: CircularProgressIndicator(
                           strokeWidth: 3.5,
-                          valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1ED760)),
+                          valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
                         ),
                       ),
                     )
@@ -147,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1ED760) : const Color(0xFF282828),
+          color: isSelected ? AppColors.primary : const Color(0xFF282828),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
@@ -184,11 +184,11 @@ class _HomeScreenState extends State<HomeScreen> {
             decoration: BoxDecoration(
               color: const Color(0xFF181818),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: const Color(0xFF1ED760).withOpacity(0.4)),
+              border: Border.all(color: AppColors.primary.withOpacity(0.4)),
             ),
             child: Row(
               children: [
-                const Icon(Icons.campaign, color: Color(0xFF1ED760), size: 18),
+                const Icon(Icons.campaign, color: AppColors.primary, size: 18),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -652,7 +652,7 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1ED760) : const Color(0xFF242424),
+          color: isSelected ? AppColors.primary : const Color(0xFF242424),
           borderRadius: BorderRadius.circular(16),
         ),
         child: Text(
