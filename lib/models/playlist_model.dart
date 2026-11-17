@@ -28,4 +28,18 @@ class Playlist {
         'songs': songs.map((s) => s.id).toList(),
         'isFeaturedOnHome': isFeaturedOnHome,
       };
+
+  factory Playlist.fromSaavnJson(Map<String, dynamic> json) {
+    final List images = json['image'] as List? ?? [];
+    final String cover = images.isNotEmpty ? (images.last['url'] ?? '') : '';
+    return Playlist(
+      id: json['id']?.toString() ?? '',
+      title: Song.clean(json['name'] ?? json['title']),
+      description: Song.clean(json['description'] ?? 'JioSaavn Official Playlist • 320kbps Lossless'),
+      coverUrl: cover.isNotEmpty ? cover : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600',
+      genreTag: json['language']?.toString().toUpperCase() ?? 'TOP HITS',
+      songs: [],
+      isFeaturedOnHome: true,
+    );
+  }
 }

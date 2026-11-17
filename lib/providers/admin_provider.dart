@@ -15,7 +15,7 @@ class AdminProvider with ChangeNotifier {
   // Official New Firebase Project Credentials
   String _appName = 'EXOTIC MUSIC';
   bool _isMaintenanceMode = false;
-  String _announcementMessage = 'Welcome to EXOTIC MUSIC! Stream unlimited high-definition music.';
+  String _announcementMessage = '';
   bool _isVipRequired = false;
 
   // New Connected Firebase Configuration (exoticglobalmusic)
@@ -168,7 +168,7 @@ class AdminProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _appName = prefs.getString('admin_app_name') ?? 'EXOTIC MUSIC';
     _isMaintenanceMode = prefs.getBool('admin_maintenance') ?? false;
-    _announcementMessage = prefs.getString('admin_announcement') ?? 'Welcome to EXOTIC MUSIC!';
+    _announcementMessage = prefs.getString('admin_announcement') ?? '';
     _isVipRequired = prefs.getBool('admin_vip_required') ?? false;
 
     // Load Theme Color & Glassmorphism config

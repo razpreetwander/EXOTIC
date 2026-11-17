@@ -4,8 +4,9 @@ import '../providers/audio_player_provider.dart';
 import '../providers/music_library_provider.dart';
 import '../providers/admin_provider.dart';
 import '../theme/app_colors.dart';
-import '../widgets/create_playlist_dialog.dart';
 import 'artist_profile_screen.dart';
+import 'playlist_detail_screen.dart';
+import '../models/playlist_model.dart';
 
 class LibraryScreen extends StatefulWidget {
   final VoidCallback? onOpenDrawer;
@@ -131,7 +132,7 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(4),
                           gradient: const LinearGradient(
-                            colors: [Color(0xFF450AF5), Color(0xFFC4E0E5)],
+                            colors: [AppColors.primary, Color(0xFFE91E63)],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
                           ),
@@ -147,19 +148,55 @@ class _LibraryScreenState extends State<LibraryScreen> {
                         children: [
                           const Icon(Icons.push_pin, color: AppColors.primary, size: 12),
                           const SizedBox(width: 4),
-                          Text('Playlist • Armaansingh (${likedSongs.length} songs)', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                          Text('Playlist • (${likedSongs.length} songs)', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                         ],
                       ),
                       onTap: () {
-                        if (likedSongs.isNotEmpty) {
-                          playerProvider.playPlaylist(likedSongs);
-                        } else {
-                          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No liked songs yet!')));
-                        }
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PlaylistDetailScreen(
+                              playlist: Playlist(
+                                id: 'liked_songs',
+                                title: 'Liked Songs',
+                                description: 'Your personal collection of favorite tracks',
+                                coverUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=600',
+                                genreTag: 'FAVORITES',
+                                songs: likedSongs,
+                              ),
+                            ),
+                          ),
+                        );
                       },
                     ),
 
-                  // 2. Playlists List
+                  // 2. User Created Custom Playlists
+                  if (_selectedFilter == 'All' || _selectedFilter == 'Playlists')
+                    ...libraryProvider.userPlaylists.map((userPl) => ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: Image.network(
+                              userPl.coverUrl,
+                              width: 54,
+                              height: 54,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(color: AppColors.surface, child: const Icon(Icons.queue_music, color: AppColors.primary)),
+                            ),
+                          ),
+                          title: Text(userPl.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+                          subtitle: Text('Custom Playlist • (${userPl.songs.length} songs)', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PlaylistDetailScreen(playlist: userPl),
+                              ),
+                            );
+                          },
+                        )),
+
+                  // 3. Featured Playlists Catalog
                   if (_selectedFilter == 'All' || _selectedFilter == 'Playlists')
                     ...playlists.map((playlist) => ListTile(
                           contentPadding: EdgeInsets.zero,
@@ -174,11 +211,14 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             ),
                           ),
                           title: Text(playlist.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
-                          subtitle: Text('Playlist • Armaansingh (${playlist.songs.length} songs)', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                          subtitle: Text('Playlist • (${playlist.songs.length} songs)', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                           onTap: () {
-                            if (playlist.songs.isNotEmpty) {
-                              playerProvider.playPlaylist(playlist.songs);
-                            }
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => PlaylistDetailScreen(playlist: playlist),
+                              ),
+                            );
                           },
                         )),
 

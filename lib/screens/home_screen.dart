@@ -13,6 +13,7 @@ import '../services/saavn_api_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_drawer.dart';
 import 'artist_profile_screen.dart';
+import 'playlist_detail_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -31,7 +32,24 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Song> _saavnTrendingHits = [];
   List<Song> _saavnPunjabiHits = [];
   List<Song> _saavnBollywoodHits = [];
+  List<Playlist> _saavnPlaylists = [];
+  List<Artist> _userFavoriteArtists = [];
   bool _isFetchingSaavn = false;
+
+  static final Map<String, String> _artistImages = {
+    'Karan Aujla': 'https://c.saavncdn.com/artists/Karan_Aujla_005_20260925061936_500x500.jpg',
+    'Diljit Dosanjh': 'https://c.saavncdn.com/artists/Diljit_Dosanjh_004_20260925061936_500x500.jpg',
+    'Sidhu Moose Wala': 'https://c.saavncdn.com/artists/Sidhu_Moose_Wala_003_20260925061936_500x500.jpg',
+    'Arijit Singh': 'https://c.saavncdn.com/artists/Arijit_Singh_002_20260925061936_500x500.jpg',
+    'Shubh': 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?q=80&w=400',
+    'AP Dhillon': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+    'Yo Yo Honey Singh': 'https://c.saavncdn.com/artists/Yo_Yo_Honey_Singh_002_20260925061936_500x500.jpg',
+    'Badshah': 'https://c.saavncdn.com/artists/Badshah_005_20260925061936_500x500.jpg',
+    'Divine': 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400',
+    'The Weeknd': 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400',
+    'Dua Lipa': 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400',
+    'Justin Bieber': 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=400',
+  };
 
   @override
   void initState() {
@@ -46,26 +64,49 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final preferredArtists = prefs.getStringList('user_preferred_artists') ?? ['Karan Aujla', 'Diljit Dosanjh', 'Arijit Singh'];
+      final preferredLanguages = prefs.getStringList('user_preferred_languages') ?? ['Punjabi', 'Hindi', 'English'];
       final primaryArtist = preferredArtists.isNotEmpty ? preferredArtists.first : 'Karan Aujla';
 
-      // 1. Fetch 8 Quick Picks based on user's primary artist
+      // 1. Build favorite artists models from user's selected preferences
+      final List<Artist> favArtists = preferredArtists.map((name) {
+        final img = _artistImages[name] ?? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400';
+        return Artist(
+          id: 'artist_${name.toLowerCase().replaceAll(' ', '_')}',
+          name: name,
+          imageUrl: img,
+          bio: '$name verified artist discography on EXOTIC MUSIC.',
+          language: preferredLanguages.isNotEmpty ? preferredLanguages.first : 'Punjabi',
+          artistType: 'Artist',
+          genre: 'Top Hits',
+          monthlyListeners: 18500000,
+        );
+      }).toList();
+
+      // 2. Fetch 8 Quick Picks based on user's primary artist
       final quickSongs = await SaavnApiService.searchSongs(primaryArtist, limit: 8);
 
-      // 2. Fetch Trending 50 India
-      final trending = await SaavnApiService.searchSongs('Trending Top 50 India', limit: 10);
+      // 3. Fetch Trending 50 India
+      final trending = await SaavnApiService.searchSongs('Trending Top 50 India', limit: 12);
 
-      // 3. Fetch Punjabi Hits
-      final punjabi = await SaavnApiService.searchSongs('Punjabi Top Hits', limit: 10);
+      // 4. Fetch First Preferred Language Hits
+      final lang1 = preferredLanguages.isNotEmpty ? preferredLanguages[0] : 'Punjabi';
+      final lang1Songs = await SaavnApiService.searchSongs('$lang1 Top Hits', limit: 12);
 
-      // 4. Fetch Bollywood Hits
-      final bollywood = await SaavnApiService.searchSongs('Bollywood Romantic Hits', limit: 10);
+      // 5. Fetch Second Preferred Language Hits
+      final lang2 = preferredLanguages.length > 1 ? preferredLanguages[1] : 'Bollywood';
+      final lang2Songs = await SaavnApiService.searchSongs('$lang2 Romantic Hits', limit: 12);
+
+      // 6. Fetch Real JioSaavn Playlists
+      final playlists = await SaavnApiService.searchPlaylists('Top Hits India', limit: 10);
 
       if (mounted) {
         setState(() {
+          _userFavoriteArtists = favArtists;
           if (quickSongs.isNotEmpty) _saavnQuickPicks = quickSongs;
           if (trending.isNotEmpty) _saavnTrendingHits = trending;
-          if (punjabi.isNotEmpty) _saavnPunjabiHits = punjabi;
-          if (bollywood.isNotEmpty) _saavnBollywoodHits = bollywood;
+          if (lang1Songs.isNotEmpty) _saavnPunjabiHits = lang1Songs;
+          if (lang2Songs.isNotEmpty) _saavnBollywoodHits = lang2Songs;
+          if (playlists.isNotEmpty) _saavnPlaylists = playlists;
           _isFetchingSaavn = false;
         });
       }
@@ -226,33 +267,66 @@ class _HomeScreenState extends State<HomeScreen> {
     List<Album> albums,
   ) {
     return [
-      // Announcement banner if broadcasted by Admin
-      if (admin.announcementMessage.isNotEmpty)
+      // 1. Your Favorite Artists Carousel (Directly from User Onboarding/Settings Taste)
+      if (_userFavoriteArtists.isNotEmpty) ...[
+        _buildSectionTitle('Your Favorite Artists'),
         SliverToBoxAdapter(
-          child: Container(
-            margin: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF181818),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppColors.primary.withOpacity(0.4)),
-            ),
-            child: Row(
-              children: [
-                const Icon(Icons.campaign, color: AppColors.primary, size: 18),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    admin.announcementMessage,
-                    style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+          child: SizedBox(
+            height: 155,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _userFavoriteArtists.length,
+              itemBuilder: (context, index) {
+                final artist = _userFavoriteArtists[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ArtistProfileScreen(artist: artist),
+                      ),
+                    );
+                  },
+                  child: Container(
+                    width: 105,
+                    margin: const EdgeInsets.only(right: 14),
+                    child: Column(
+                      children: [
+                        CircleAvatar(
+                          radius: 44,
+                          backgroundColor: AppColors.surfaceLight,
+                          backgroundImage: NetworkImage(artist.imageUrl),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          artist.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        const Text(
+                          'Artist',
+                          style: TextStyle(color: AppColors.textSecondary, fontSize: 10),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                );
+              },
             ),
           ),
         ),
+      ],
 
-      // 8-Card Quick Picks Grid (2 columns x 4 rows = Real JioSaavn Songs)
+      // 2. 8-Card Quick Picks Grid (Real Dynamic JioSaavn Songs from User Taste)
+      _buildSectionTitle('Quick Picks For You'),
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         sliver: SliverGrid(
@@ -271,159 +345,118 @@ class _HomeScreenState extends State<HomeScreen> {
                       onTap: () => player.playSong(song, contextPlaylist: _saavnQuickPicks),
                     );
                   }).toList()
-                : [
-                    _buildQuickTile(
-                      title: 'ANYWAY',
-                      imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=300',
-                      onTap: () => _playTrackByTitle(player, 'ANYWAY'),
-                    ),
-                    _buildQuickTile(
-                      title: 'Svantesson',
-                      imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300',
-                      onTap: () => _playTrackByTitle(player, 'Fine Young Man'),
-                    ),
-                    _buildQuickTile(
-                      title: 'h4rdjump_1988',
-                      imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300',
-                      onTap: () => _playTrackByTitle(player, 'h4rdjump_1988'),
-                    ),
-                    _buildQuickTile(
-                      title: 'MXZI',
-                      imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300',
-                      onTap: () => _playTrackByTitle(player, 'ERASE'),
-                    ),
-                    _buildQuickTile(
-                      title: '\$werve',
-                      imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300',
-                      onTap: () => _playTrackByTitle(player, 'Starboy (Exotic Edit)'),
-                    ),
-                    _buildQuickTile(
-                      title: 'Known Unknowns',
-                      imageUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=300',
-                      onTap: () => _playTrackByTitle(player, 'Midnight City Beats'),
-                    ),
-                    _buildQuickTile(
-                      title: 'SIDHU MOOSE WALA',
-                      imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=300',
-                      onTap: () => _playTrackByTitle(player, 'Phantom Ferrari'),
-                    ),
-                    _buildQuickTile(
-                      title: 'TOP 10 MOST VIRAL PHONK',
-                      imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=300',
-                      onTap: () => _playTrackByTitle(player, 'MONTAGEM MODELLA'),
-                    ),
-                  ],
-          ),
-        ),
-      ),
-
-      // Advertisement / Sponsored Featured Banner
-      SliverToBoxAdapter(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF181818),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 12, 16, 8),
-                child: Row(
-                  children: [
-                    Text('Advertisement', style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500)),
-                    Spacer(),
-                    Icon(Icons.volume_off, color: Colors.white70, size: 18),
-                    SizedBox(width: 12),
-                    Icon(Icons.more_vert, color: Colors.white70, size: 18),
-                  ],
-                ),
-              ),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: Image.network(
-                  'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=800',
-                  height: 180,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    const Text('Filtr India', style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold)),
-                    const Spacer(),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: Colors.black,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+                : List.generate(
+                    8,
+                    (i) => Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF242424),
+                        borderRadius: BorderRadius.circular(6),
                       ),
-                      onPressed: () {
-                        if (_saavnTrendingHits.isNotEmpty) {
-                          player.playSong(_saavnTrendingHits.first, contextPlaylist: _saavnTrendingHits);
-                        } else if (songs.isNotEmpty) {
-                          player.playSong(songs.first);
-                        }
-                      },
-                      child: const Text('Listen now', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      child: Row(
+                        children: [
+                          Container(width: 54, color: const Color(0xFF333333)),
+                          const SizedBox(width: 10),
+                          Container(width: 70, height: 10, color: const Color(0xFF333333)),
+                        ],
+                      ),
                     ),
-                  ],
-                ),
-              ),
-            ],
+                  ),
           ),
         ),
       ),
 
-      // Recommended for Today (Live JioSaavn Trending Hits)
-      _buildSectionTitle('Trending Today in India'),
-      SliverToBoxAdapter(
-        child: SizedBox(
-          height: 220,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: _saavnTrendingHits.isNotEmpty
-                ? _saavnTrendingHits.map((s) {
-                    return _buildRecommendedCard(
-                      type: 'HOT TRACK',
-                      title: s.title,
-                      artist: s.artist,
-                      imageUrl: s.coverUrl,
-                      onTap: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
+      // 3. Trending Playlists Carousel (Real JioSaavn Playlists)
+      if (_saavnPlaylists.isNotEmpty) ...[
+        _buildSectionTitle('Trending Playlists'),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _saavnPlaylists.length,
+              itemBuilder: (context, index) {
+                final pl = _saavnPlaylists[index];
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => PlaylistDetailScreen(playlist: pl),
+                      ),
                     );
-                  }).toList()
-                : [
-                    _buildRecommendedCard(
-                      type: 'EP',
-                      title: 'MONTAGEM MODELLA',
-                      artist: 'ILLXSION',
-                      imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400',
-                      onTap: () => _playTrackByTitle(player, 'MONTAGEM MODELLA'),
+                  },
+                  child: Container(
+                    width: 145,
+                    margin: const EdgeInsets.only(right: 14),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            pl.coverUrl,
+                            width: 145,
+                            height: 135,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              width: 145,
+                              height: 135,
+                              color: const Color(0xFF282828),
+                              child: const Icon(Icons.queue_music, color: AppColors.primary, size: 40),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          pl.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          pl.description,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(color: AppColors.textSecondary, fontSize: 11),
+                        ),
+                      ],
                     ),
-                    _buildRecommendedCard(
-                      type: 'EP',
-                      title: 'ERASE',
-                      artist: 'GXMZ, Repsaj',
-                      imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=400',
-                      onTap: () => _playTrackByTitle(player, 'ERASE'),
-                    ),
-                    _buildRecommendedCard(
-                      type: 'SINGLE',
-                      title: 'Fine Young Man',
-                      artist: 'Dulla, Toxic',
-                      imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=400',
-                      onTap: () => _playTrackByTitle(player, 'Fine Young Man'),
-                    ),
-                  ],
+                  ),
+                );
+              },
+            ),
           ),
         ),
-      ),
+      ],
+
+      // 4. Trending Today in India (Real 320kbps JioSaavn Tracks)
+      if (_saavnTrendingHits.isNotEmpty) ...[
+        _buildSectionTitle('Trending Today in India'),
+        SliverToBoxAdapter(
+          child: SizedBox(
+            height: 220,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _saavnTrendingHits.length,
+              itemBuilder: (context, index) {
+                final s = _saavnTrendingHits[index];
+                return _buildRecommendedCard(
+                  type: 'HOT TRACK',
+                  title: s.title,
+                  artist: s.artist,
+                  imageUrl: s.coverUrl,
+                  onTap: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
 
       // Live Punjabi Hits Carousel
       if (_saavnPunjabiHits.isNotEmpty) ...[
@@ -513,7 +546,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
 
-      // 8-Card Quick Picks
+      // 8-Card Quick Picks (Real Tracks)
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverGrid(
@@ -523,105 +556,75 @@ class _HomeScreenState extends State<HomeScreen> {
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
           ),
-          delegate: SliverChildListDelegate([
-            _buildQuickTile(
-              title: 'ANYWAY',
-              imageUrl: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?q=80&w=300',
-              onTap: () => _playTrackByTitle(player, 'ANYWAY'),
-            ),
-            _buildQuickTile(
-              title: 'Svantesson',
-              imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=300',
-              onTap: () => _playTrackByTitle(player, 'Fine Young Man'),
-            ),
-            _buildQuickTile(
-              title: '\$werve',
-              imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300',
-              onTap: () => _playTrackByTitle(player, 'Starboy (Exotic Edit)'),
-            ),
-            _buildQuickTile(
-              title: 'Known Unknowns',
-              imageUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=300',
-              onTap: () => _playTrackByTitle(player, 'Midnight City Beats'),
-            ),
-            _buildQuickTile(
-              title: 'MXZI',
-              imageUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=300',
-              onTap: () => _playTrackByTitle(player, 'ERASE'),
-            ),
-            _buildQuickTile(
-              title: 'h4rdjump_1988',
-              imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300',
-              onTap: () => _playTrackByTitle(player, 'h4rdjump_1988'),
-            ),
-          ]),
-        ),
-      ),
-
-      _buildSectionTitle('Recommended for today'),
-      SliverToBoxAdapter(
-        child: SizedBox(
-          height: 220,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: [
-              _buildRecommendedCard(
-                type: 'EP',
-                title: 'MONTAGEM MODELLA',
-                artist: 'ILLXSION',
-                imageUrl: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=400',
-                onTap: () => _playTrackByTitle(player, 'MONTAGEM MODELLA'),
-              ),
-              _buildRecommendedCard(
-                type: 'EP',
-                title: 'ERASE',
-                artist: 'GXMZ, Repsaj',
-                imageUrl: 'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?q=80&w=400',
-                onTap: () => _playTrackByTitle(player, 'ERASE'),
-              ),
-            ],
+          delegate: SliverChildListDelegate(
+            _saavnQuickPicks.isNotEmpty
+                ? _saavnQuickPicks.take(8).map((song) {
+                    return _buildQuickTile(
+                      title: song.title,
+                      imageUrl: song.coverUrl,
+                      onTap: () => player.playSong(song, contextPlaylist: _saavnQuickPicks),
+                    );
+                  }).toList()
+                : List.generate(
+                    8,
+                    (i) => Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF242424),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                    ),
+                  ),
           ),
         ),
       ),
 
-      // Latest Releases Cards (From video frame 00:08)
+      // Recommended for Today (Real JioSaavn Trending Tracks)
+      _buildSectionTitle('Recommended for today'),
+      SliverToBoxAdapter(
+        child: SizedBox(
+          height: 220,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _saavnTrendingHits.length,
+            itemBuilder: (context, index) {
+              final song = _saavnTrendingHits[index];
+              return _buildRecommendedCard(
+                type: '320K LOSSLESS',
+                title: song.title,
+                artist: song.artist,
+                imageUrl: song.coverUrl,
+                onTap: () => player.playSong(song, contextPlaylist: _saavnTrendingHits),
+              );
+            },
+          ),
+        ),
+      ),
+
+      // Latest Releases Cards (Real Tracks)
       _buildSectionTitle('Latest releases'),
       SliverPadding(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverList(
-          delegate: SliverChildListDelegate([
-            _buildLatestReleaseCard(
-              title: 'Sidhu Moose Wala, Intense',
-              subtitle: 'Phantom Ferrari • 3 days ago',
-              trackInfo: '1 song • Phantom Ferrari',
-              imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
-              previewText: 'Preview single',
-              onPreview: () => _playTrackByTitle(player, 'Phantom Ferrari'),
-              onPlay: () => _playTrackByTitle(player, 'Phantom Ferrari'),
-            ),
-            const SizedBox(height: 12),
-            _buildLatestReleaseCard(
-              title: 'Mishashi Sensei',
-              subtitle: 'JOGO DE SOMBRA HARDSTYLE • 1 week ago',
-              trackInfo: '4 songs • JOGO DE SOMBRA HARDSTYLE - SLOWED...',
-              imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400',
-              previewText: 'Preview EP',
-              onPreview: () => _playTrackByTitle(player, 'MONTAGEM MODELLA'),
-              onPlay: () => _playTrackByTitle(player, 'MONTAGEM MODELLA'),
-            ),
-            const SizedBox(height: 12),
-            _buildLatestReleaseCard(
-              title: 'Svantesson, Olsson',
-              subtitle: 'Hold On Nights • 2 weeks ago',
-              trackInfo: '2 songs • Hold On Electronic',
-              imageUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?q=80&w=400',
-              previewText: 'Preview single',
-              onPreview: () => _playTrackByTitle(player, 'Fine Young Man'),
-              onPlay: () => _playTrackByTitle(player, 'Fine Young Man'),
-            ),
-          ]),
+          delegate: SliverChildListDelegate(
+            _saavnTrendingHits.isNotEmpty
+                ? _saavnTrendingHits.take(4).map((s) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _buildLatestReleaseCard(
+                        title: s.artist,
+                        subtitle: '${s.title} • Lossless Audio',
+                        trackInfo: 'Single • ${s.album}',
+                        imageUrl: s.coverUrl,
+                        previewText: 'Play 320k Track',
+                        onPreview: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
+                        onPlay: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
+                      ),
+                    );
+                  }).toList()
+                : [],
+          ),
         ),
       ),
     ];

@@ -17,6 +17,13 @@ class NowPlayingScreen extends StatefulWidget {
 
 class _NowPlayingScreenState extends State<NowPlayingScreen> {
   int _selectedTab = 0; // 0 = Cover, 1 = Lyrics
+  final ScrollController _lyricsScrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _lyricsScrollController.dispose();
+    super.dispose();
+  }
 
   String _formatDuration(Duration duration) {
     String twoDigits(int n) => n.toString().padLeft(2, '0');
@@ -378,38 +385,108 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
   }
 
   Widget _buildLyricsView(Song song, AudioPlayerProvider provider) {
-    final lyrics = song.lyrics;
-
-    if (lyrics.isEmpty) {
-      return const Center(
-        child: Text('No lyrics available for this track', style: TextStyle(color: AppColors.textMuted)),
+    if (provider.isLoadingLyrics) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            SizedBox(
+              width: 32,
+              height: 32,
+              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Fetching synchronized lyrics...',
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
       );
     }
 
+    final lyrics = provider.currentLyrics.isNotEmpty ? provider.currentLyrics : song.lyrics;
+
+    if (lyrics.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: const [
+            Icon(Icons.lyrics_outlined, color: AppColors.textMuted, size: 48),
+            SizedBox(height: 12),
+            Text(
+              'No lyrics found for this track',
+              style: TextStyle(color: Colors.white70, fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Enjoy the pure lossless music streaming',
+              style: TextStyle(color: AppColors.textMuted, fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Auto-scroll to current active lyric line
+    final currentLineIndex = lyrics.indexWhere((line) {
+      final idx = lyrics.indexOf(line);
+      return provider.position >= line.timestamp &&
+          (idx == lyrics.length - 1 || provider.position < lyrics[idx + 1].timestamp);
+    });
+
+    if (currentLineIndex != -1 && _lyricsScrollController.hasClients) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_lyricsScrollController.hasClients) {
+          final targetOffset = (currentLineIndex * 54.0) - 120.0;
+          final clamped = targetOffset.clamp(0.0, _lyricsScrollController.position.maxScrollExtent);
+          _lyricsScrollController.animateTo(
+            clamped,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+          );
+        }
+      });
+    }
+
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-      padding: const EdgeInsets.all(20),
+      margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.cardBg,
+        color: const Color(0xFF181818),
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withOpacity(0.06)),
       ),
       child: ListView.builder(
+        controller: _lyricsScrollController,
         physics: const BouncingScrollPhysics(),
         itemCount: lyrics.length,
         itemBuilder: (context, index) {
           final line = lyrics[index];
-          final isCurrentLine = provider.position >= line.timestamp &&
-              (index == lyrics.length - 1 || provider.position < lyrics[index + 1].timestamp);
+          final isCurrentLine = (index == currentLineIndex);
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Text(
-              line.text,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: isCurrentLine ? 18 : 15,
-                fontWeight: isCurrentLine ? FontWeight.w900 : FontWeight.normal,
-                color: isCurrentLine ? AppColors.primary : AppColors.textSecondary,
+          return GestureDetector(
+            onTap: () {
+              // Tap lyric line to jump audio directly to that timestamp
+              provider.seek(line.timestamp);
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+              margin: const EdgeInsets.symmetric(vertical: 2),
+              decoration: BoxDecoration(
+                color: isCurrentLine ? AppColors.primary.withOpacity(0.12) : Colors.transparent,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Text(
+                line.text,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isCurrentLine ? 19 : 15,
+                  fontWeight: isCurrentLine ? FontWeight.w900 : FontWeight.w500,
+                  color: isCurrentLine ? AppColors.primary : const Color(0xFF888888),
+                  height: 1.35,
+                ),
               ),
             ),
           );

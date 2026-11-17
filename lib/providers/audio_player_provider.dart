@@ -30,6 +30,11 @@ class AudioPlayerProvider with ChangeNotifier {
   List<double> _spectrumBars = [0.2, 0.4, 0.7, 0.5, 0.9, 0.3, 0.6, 0.8, 0.4];
   Timer? _spectrumTimer;
 
+  // Real-Time Synced Lyrics
+  List<LyricLine> _currentLyrics = [];
+  bool _isLoadingLyrics = false;
+  final Set<String> _playedSongIds = {};
+
   // Getters
   List<Song> get playlist => _playlist;
   int get currentIndex => _currentIndex;
@@ -43,12 +48,10 @@ class AudioPlayerProvider with ChangeNotifier {
   String get currentEqPreset => _currentEqPreset;
   List<double> get eqBands => _eqBands;
   List<double> get spectrumBars => _spectrumBars;
+  List<LyricLine> get currentLyrics => _currentLyrics;
+  bool get isLoadingLyrics => _isLoadingLyrics;
 
   AudioPlayerProvider() {
-    _playlist = List.from(MusicData.allSongs);
-    if (_playlist.isNotEmpty) {
-      _currentIndex = 0;
-    }
     _initListeners();
   }
 
@@ -113,7 +116,7 @@ class AudioPlayerProvider with ChangeNotifier {
       }
     }
 
-    int index = _playlist.indexWhere((s) => s.id == song.id);
+    int index = _playlist.indexWhere((s) => s.id == playableSong.id);
     if (index == -1) {
       _playlist.insert(0, playableSong);
       index = 0;
@@ -121,7 +124,10 @@ class AudioPlayerProvider with ChangeNotifier {
       _playlist[index] = playableSong;
     }
     _currentIndex = index;
+    _playedSongIds.add(playableSong.id);
 
+    _fetchLyricsForSong(playableSong);
+    _prefetchSuggestionsIfNeeded(playableSong);
     await _startAudio(playableSong.audioUrl);
   }
 
@@ -129,7 +135,59 @@ class AudioPlayerProvider with ChangeNotifier {
     if (songs.isEmpty) return;
     _playlist = List.from(songs);
     _currentIndex = initialIndex.clamp(0, _playlist.length - 1);
-    await _startAudio(_playlist[_currentIndex].audioUrl);
+    final song = _playlist[_currentIndex];
+    _playedSongIds.add(song.id);
+    _fetchLyricsForSong(song);
+    _prefetchSuggestionsIfNeeded(song);
+    await _startAudio(song.audioUrl);
+  }
+
+  void _fetchLyricsForSong(Song song) async {
+    _currentLyrics = [];
+    _isLoadingLyrics = true;
+    notifyListeners();
+
+    try {
+      final lyrics = await SaavnApiService.fetchRealtimeLyrics(
+        song.title,
+        song.artist,
+        durationSeconds: song.duration.inSeconds,
+        songId: song.id,
+      );
+      if (currentSong?.id == song.id) {
+        _currentLyrics = lyrics;
+        _isLoadingLyrics = false;
+        notifyListeners();
+      }
+    } catch (e) {
+      if (currentSong?.id == song.id) {
+        _isLoadingLyrics = false;
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> _prefetchSuggestionsIfNeeded(Song song) async {
+    final remaining = _playlist.length - 1 - _currentIndex;
+    if (remaining <= 3) {
+      try {
+        final suggestions = await SaavnApiService.getSuggestions(song.id, limit: 12);
+        final fresh = suggestions.where((s) => !_playedSongIds.contains(s.id) && !_playlist.any((p) => p.id == s.id)).toList();
+        if (fresh.isNotEmpty) {
+          _playlist.addAll(fresh);
+          notifyListeners();
+        } else {
+          final artistSongs = await SaavnApiService.searchSongs(song.artist, limit: 10);
+          final freshArtist = artistSongs.where((s) => !_playedSongIds.contains(s.id) && !_playlist.any((p) => p.id == s.id)).toList();
+          if (freshArtist.isNotEmpty) {
+            _playlist.addAll(freshArtist);
+            notifyListeners();
+          }
+        }
+      } catch (e) {
+        debugPrint('Prefetch suggestions error: $e');
+      }
+    }
   }
 
   Future<void> _startAudio(String url) async {
@@ -212,7 +270,12 @@ class AudioPlayerProvider with ChangeNotifier {
         return;
       }
     }
-    await _startAudio(_playlist[_currentIndex].audioUrl);
+
+    final song = _playlist[_currentIndex];
+    _playedSongIds.add(song.id);
+    _fetchLyricsForSong(song);
+    _prefetchSuggestionsIfNeeded(song);
+    await _startAudio(song.audioUrl);
   }
 
   Future<void> playPrevious() async {
@@ -228,7 +291,12 @@ class AudioPlayerProvider with ChangeNotifier {
     } else {
       _currentIndex = _playlist.length - 1;
     }
-    await _startAudio(_playlist[_currentIndex].audioUrl);
+
+    final song = _playlist[_currentIndex];
+    _playedSongIds.add(song.id);
+    _fetchLyricsForSong(song);
+    _prefetchSuggestionsIfNeeded(song);
+    await _startAudio(song.audioUrl);
   }
 
   void toggleShuffle() {
@@ -252,15 +320,8 @@ class AudioPlayerProvider with ChangeNotifier {
       seek(Duration.zero);
       _audioPlayer.resume();
     } else {
-      // Auto-play / Radio queue: fetch similar vibe songs from JioSaavn if near end
-      if (_currentIndex >= _playlist.length - 1 && currentSong != null) {
-        try {
-          final suggestions = await SaavnApiService.getSuggestions(currentSong!.id, limit: 10);
-          if (suggestions.isNotEmpty) {
-            _playlist.addAll(suggestions);
-            notifyListeners();
-          }
-        } catch (_) {}
+      if (currentSong != null) {
+        await _prefetchSuggestionsIfNeeded(currentSong!);
       }
       playNext();
     }
