@@ -104,26 +104,19 @@ class AudioPlayerProvider with ChangeNotifier {
   Future<Song> _resolveSongStream(Song song) async {
     Song playableSong = song;
 
-    // 1. YouTube Direct Audio Resolution
-    if (playableSong.id.startsWith('yt_') && (playableSong.audioUrl.isEmpty || !playableSong.audioUrl.startsWith('http'))) {
+    // 1. YouTube Direct Audio Resolution (Multi-layer: JioSaavn CDN -> Local Cache -> Piped -> Direct)
+    if (playableSong.id.startsWith('yt_') || playableSong.audioUrl.isEmpty) {
       try {
-        final ytStream = await YtMusicService.getDirectAudioStreamUrl(playableSong.id);
-        if (ytStream.isNotEmpty) {
-          playableSong = playableSong.copyWith(audioUrl: ytStream);
+        final resolvedSource = await YtMusicService.resolvePlayableAudio(
+          playableSong.id,
+          title: playableSong.title,
+          artist: playableSong.artist,
+        );
+        if (resolvedSource.isNotEmpty) {
+          playableSong = playableSong.copyWith(audioUrl: resolvedSource);
         }
       } catch (e) {
-        debugPrint('Error resolving YouTube direct stream: $e');
-      }
-
-      // Fast Parallel JioSaavn Fallback for YouTube songs
-      if (playableSong.audioUrl.isEmpty) {
-        try {
-          final saavnMatch = await SaavnApiService.searchSongs("${playableSong.title} ${playableSong.artist}", limit: 1);
-          if (saavnMatch.isNotEmpty && saavnMatch.first.audioUrl.isNotEmpty) {
-            playableSong = playableSong.copyWith(audioUrl: saavnMatch.first.audioUrl);
-            debugPrint("Fast recovered YouTube song with JioSaavn CDN: ${playableSong.title}");
-          }
-        } catch (_) {}
+        debugPrint('Error resolving YouTube audio source: $e');
       }
     }
     // 2. JioSaavn Stream Resolution
@@ -138,7 +131,7 @@ class AudioPlayerProvider with ChangeNotifier {
       }
     }
 
-    // 3. Fallback: If song is missing audio URL and not local, resolve via YouTube Engine
+    // 3. Fallback: If song is still missing audio URL and not local, resolve via Universal Engine
     if (playableSong.audioUrl.isEmpty && !playableSong.audioUrl.startsWith('/')) {
       try {
         final fallbackStream = await YtMusicService.resolveFallbackAudio(playableSong.title, playableSong.artist);
@@ -146,7 +139,7 @@ class AudioPlayerProvider with ChangeNotifier {
           playableSong = playableSong.copyWith(audioUrl: fallbackStream);
         }
       } catch (e) {
-        debugPrint('Fallback YouTube resolution error: $e');
+        debugPrint('Fallback Universal resolution error: $e');
       }
     }
 
@@ -291,7 +284,11 @@ class AudioPlayerProvider with ChangeNotifier {
           final ytStream = await YtMusicService.resolveFallbackAudio(currentSong!.title, currentSong!.artist);
           if (ytStream.isNotEmpty) {
             await _audioPlayer.stop();
-            await _audioPlayer.play(UrlSource(ytStream));
+            if (ytStream.startsWith('/') || ytStream.startsWith('file://')) {
+              await _audioPlayer.play(DeviceFileSource(ytStream.replaceFirst('file://', '')));
+            } else {
+              await _audioPlayer.play(UrlSource(ytStream));
+            }
             success = true;
             debugPrint("Successfully recovered with YouTube audio fallback: ${currentSong!.title}");
           }

@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../providers/settings_provider.dart';
+import '../services/saavn_api_service.dart';
+import '../services/yt_music_service.dart';
 import '../theme/app_colors.dart';
 import 'main_navigation_screen.dart';
 
@@ -41,6 +43,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   final Set<String> _selectedArtists = {};
 
   String _artistCategoryFilter = 'For You';
+  List<Map<String, String>> _dynamicArtists = [];
+  final Map<String, String> _artistImages = {};
+  bool _isLoadingArtists = false;
+  Timer? _searchDebounce;
 
   // Language Cards Data with Exact JioSaavn CDN Artist Cut-outs
   final List<Map<String, dynamic>> _languages = [
@@ -313,6 +319,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   @override
   void initState() {
     super.initState();
+    // Initialize image map and dynamic artists seed
+    for (final a in _allArtists) {
+      if (a['name'] != null && a['image'] != null) {
+        _artistImages[a['name']!] = a['image']!;
+      }
+    }
+    _dynamicArtists = List.from(_allArtists);
+
     // If in reset mode from Settings, start at language selection (Page 7)
     final initialPage = widget.isResetMode ? 7 : 0;
     _currentPage = initialPage;
@@ -321,12 +335,104 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _pageController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _nameController.dispose();
     _artistSearchController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchArtistsForCategory(String category) async {
+    if (!mounted) return;
+    setState(() => _isLoadingArtists = true);
+
+    try {
+      final query = category == 'For You'
+          ? (_selectedLanguages.isNotEmpty ? _selectedLanguages.first : 'Trending')
+          : category;
+
+      final saavnFuture = SaavnApiService.searchArtists(query, limit: 15);
+      final ytFuture = YtMusicService.searchArtists(query, limit: 8);
+
+      final saavnArtists = await saavnFuture;
+      final ytArtists = await ytFuture;
+
+      final Set<String> seen = {};
+      final List<Map<String, String>> list = [];
+
+      for (final a in [...saavnArtists, ...ytArtists]) {
+        final cleanName = a.name.trim();
+        if (cleanName.isEmpty || seen.contains(cleanName.toLowerCase())) continue;
+        seen.add(cleanName.toLowerCase());
+        final img = a.imageUrl.isNotEmpty ? a.imageUrl : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400';
+        _artistImages[cleanName] = img;
+        list.add({
+          'name': cleanName,
+          'category': category,
+          'image': img,
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          if (list.isNotEmpty) {
+            _dynamicArtists = list;
+          }
+          _isLoadingArtists = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _isLoadingArtists = false);
+    }
+  }
+
+  void _onArtistSearchChanged(String query) {
+    _searchDebounce?.cancel();
+    final clean = query.trim();
+    if (clean.isEmpty) {
+      _fetchArtistsForCategory(_artistCategoryFilter);
+      return;
+    }
+
+    _searchDebounce = Timer(const Duration(milliseconds: 350), () async {
+      if (!mounted) return;
+      setState(() => _isLoadingArtists = true);
+
+      try {
+        final saavnFuture = SaavnApiService.searchArtists(clean, limit: 12);
+        final ytFuture = YtMusicService.searchArtists(clean, limit: 8);
+
+        final saavnArtists = await saavnFuture;
+        final ytArtists = await ytFuture;
+
+        final Set<String> seen = {};
+        final List<Map<String, String>> list = [];
+
+        for (final a in [...saavnArtists, ...ytArtists]) {
+          final cleanName = a.name.trim();
+          if (cleanName.isEmpty || seen.contains(cleanName.toLowerCase())) continue;
+          seen.add(cleanName.toLowerCase());
+          final img = a.imageUrl.isNotEmpty ? a.imageUrl : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400';
+          _artistImages[cleanName] = img;
+          list.add({
+            'name': cleanName,
+            'category': 'Search',
+            'image': img,
+          });
+        }
+
+        if (mounted) {
+          setState(() {
+            _dynamicArtists = list;
+            _isLoadingArtists = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) setState(() => _isLoadingArtists = false);
+      }
+    });
   }
 
   void _nextPage() {
@@ -1070,6 +1176,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                         _artistCategoryFilter = _selectedLanguages.first;
                       }
                     });
+                    _fetchArtistsForCategory(_artistCategoryFilter);
                     _nextPage();
                   }
                 },
@@ -1084,12 +1191,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
 
   // =========================================================================
   // PAGE 9: CHOOSE 3 OR MORE ARTISTS (Video Frame 01:06 - 01:19)
+  // Dynamic Real-time Assembly from JioSaavn & YouTube
   // =========================================================================
   Widget _buildPage9Artists() {
     final query = _artistSearchController.text.toLowerCase().trim();
-    final filtered = _allArtists.where((a) {
+    final filtered = _dynamicArtists.where((a) {
       final matchesSearch = query.isEmpty || a['name']!.toLowerCase().contains(query);
-      final matchesCategory = (_artistCategoryFilter == 'For You') ||
+      final matchesCategory = query.isNotEmpty ||
+          (_artistCategoryFilter == 'For You') ||
           (a['category']?.toLowerCase() == _artistCategoryFilter.toLowerCase());
       return matchesSearch && matchesCategory;
     }).toList();
@@ -1107,7 +1216,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               ),
               const SizedBox(height: 14),
 
-              // Search Bar matching Video Frame 01:06
+              // Search Bar matching Video Frame 01:06 with real-time debounce
               Container(
                 height: 44,
                 decoration: BoxDecoration(
@@ -1117,7 +1226,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 child: TextField(
                   controller: _artistSearchController,
                   style: const TextStyle(color: Colors.black, fontSize: 15),
-                  onChanged: (_) => setState(() {}),
+                  onChanged: _onArtistSearchChanged,
                   decoration: const InputDecoration(
                     hintText: 'Search',
                     hintStyle: TextStyle(color: Colors.black54, fontSize: 14),
@@ -1155,18 +1264,36 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               ),
               const SizedBox(height: 16),
 
-              // 3-Column Round Artist Avatars Grid
+              // 3-Column Round Artist Avatars Grid with Dynamic Loading
               Expanded(
-                child: GridView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.only(bottom: 90),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: 0.85,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 14,
-                  ),
-                  itemCount: filtered.length,
+                child: _isLoadingArtists && filtered.isEmpty
+                    ? const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(40),
+                          child: CircularProgressIndicator(color: AppColors.primary),
+                        ),
+                      )
+                    : filtered.isEmpty
+                        ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(32),
+                              child: Text(
+                                'No artists found.\nTry typing an artist name in Search!',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(color: Colors.white54, fontSize: 14),
+                              ),
+                            ),
+                          )
+                        : GridView.builder(
+                            physics: const BouncingScrollPhysics(),
+                            padding: const EdgeInsets.only(bottom: 90),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              childAspectRatio: 0.85,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 14,
+                            ),
+                            itemCount: filtered.length,
                   itemBuilder: (context, index) {
                     final item = filtered[index];
                     final name = item['name']!;
@@ -1282,8 +1409,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   // PAGE 10: GREAT PICKS TRANSITION (Video Frame 01:20 - 01:23)
   // =========================================================================
   Widget _buildPage10GreatPicks() {
-    final selList = _allArtists.where((a) => _selectedArtists.contains(a['name'])).take(5).toList();
-    final displayList = selList.isNotEmpty ? selList : _allArtists.take(3).toList();
+    final displayList = _selectedArtists.map((name) {
+      return {
+        'name': name,
+        'image': _artistImages[name] ?? 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+      };
+    }).take(5).toList();
 
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
@@ -1539,7 +1670,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
   Widget _buildArtistCategoryChip(String label) {
     final isSel = _artistCategoryFilter == label;
     return GestureDetector(
-      onTap: () => setState(() => _artistCategoryFilter = label),
+      onTap: () {
+        setState(() {
+          _artistCategoryFilter = label;
+          _artistSearchController.clear();
+        });
+        _fetchArtistsForCategory(label);
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
