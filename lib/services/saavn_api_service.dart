@@ -157,6 +157,9 @@ class SaavnApiService {
         if (imgUrl.isEmpty && images.isNotEmpty) {
           imgUrl = images.first['url']?.toString() ?? '';
         }
+        if (isDummyPlaceholder(imgUrl)) {
+          imgUrl = '';
+        }
         final role = r['role']?.toString() ?? 'Artist';
         artists.add(
           Artist(
@@ -225,6 +228,15 @@ class SaavnApiService {
     return null;
   }
 
+  static bool isDummyPlaceholder(String url) {
+    if (url.isEmpty) return true;
+    final lower = url.toLowerCase();
+    return lower.contains('artist-default') ||
+        lower.contains('default-music') ||
+        lower.contains('default-film') ||
+        lower.contains('default_artist');
+  }
+
   static final Map<String, String> _artistPicMemoryCache = {};
 
   /// Get Official High-Resolution 500x500 Artist Portrait
@@ -245,7 +257,7 @@ class SaavnApiService {
           final images = results.first['image'] as List? ?? [];
           if (images.isNotEmpty) {
             final url = images.last['url']?.toString() ?? '';
-            if (url.isNotEmpty && url.startsWith('http')) {
+            if (url.isNotEmpty && url.startsWith('http') && !isDummyPlaceholder(url)) {
               _artistPicMemoryCache[key] = url;
               return url;
             }

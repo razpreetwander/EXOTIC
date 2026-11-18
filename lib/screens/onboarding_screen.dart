@@ -434,7 +434,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
           final cleanName = a.name.trim();
           if (cleanName.isEmpty || seen.contains(cleanName.toLowerCase())) continue;
           seen.add(cleanName.toLowerCase());
-          final img = a.imageUrl.isNotEmpty ? a.imageUrl : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400';
+          final img = (a.imageUrl.isNotEmpty && !SaavnApiService.isDummyPlaceholder(a.imageUrl))
+              ? a.imageUrl
+              : '';
           _artistImages[cleanName] = img;
           list.add({
             'name': cleanName,

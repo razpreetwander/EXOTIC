@@ -12,6 +12,7 @@ import '../providers/admin_provider.dart';
 import '../providers/settings_provider.dart';
 import '../services/saavn_api_service.dart';
 import '../services/yt_music_service.dart';
+import '../services/notification_service.dart';
 import '../theme/app_colors.dart';
 import '../widgets/app_drawer.dart';
 import 'artist_profile_screen.dart';
@@ -89,6 +90,11 @@ class _HomeScreenState extends State<HomeScreen> {
       _lang2Name = lang2;
       _primaryArtistName = primaryArtist;
       _secondaryArtistName = secondaryArtist;
+
+      final userName = prefs.getString('user_name') ?? 'Music Lover';
+      NotificationService.requestPermission().then((_) {
+        NotificationService.checkAndShowWelcomeNotification(lang1, userName);
+      });
 
       // Dynamic Section Search Queries based on user language preferences
       final String releasesQuery = isInternational ? 'New Releases English' : 'New Releases $lang1';

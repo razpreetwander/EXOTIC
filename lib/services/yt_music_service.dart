@@ -243,7 +243,71 @@ class YtMusicService {
     }
   }
 
-  /// 4. MULTI-LAYER AUDIO RESOLUTION (JioSaavn 320kbps CDN -> Local Cache -> Fast Local Download -> Piped/Direct)
+  /// 3B. VISIONOS DIRECT AUDIO STREAM (Bypasses PoToken & 403, returns direct playable HTTP 206 URL)
+  static Future<String> getVisionOSAudioStreamUrl(String rawVideoId) async {
+    final videoId = rawVideoId.replaceFirst('yt_', '').trim();
+    if (videoId.isEmpty) return '';
+
+    if (_streamCache.containsKey(videoId)) {
+      return _streamCache[videoId]!;
+    }
+
+    try {
+      final payload = {
+        'context': {
+          'client': {
+            'clientName': 'VISIONOS',
+            'clientVersion': '1.02',
+            'deviceMake': 'Apple',
+            'deviceModel': 'RealityDevice17,1',
+            'userAgent':
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15',
+            'osName': 'visionOS',
+            'osVersion': '26.5.23O471',
+            'hl': 'en',
+            'timeZone': 'UTC',
+            'utcOffsetMinutes': 0,
+          }
+        },
+        'videoId': videoId,
+      };
+
+      final response = await http.post(
+        Uri.parse('https://www.youtube.com/youtubei/v1/player?prettyPrint=false'),
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent':
+              'Mozilla/5.0 (Macintosh; Intel Mac OS X 15_7_3) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15',
+        },
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 4));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final streamingData = data['streamingData'] as Map<String, dynamic>?;
+        if (streamingData != null) {
+          final formats = streamingData['adaptiveFormats'] as List? ?? [];
+          final audioFormats = formats.where((f) {
+            final mime = f['mimeType']?.toString().toLowerCase() ?? '';
+            return mime.startsWith('audio/') && f['url'] != null && f['url'].toString().startsWith('http');
+          }).toList();
+
+          if (audioFormats.isNotEmpty) {
+            audioFormats.sort((a, b) => ((b['bitrate'] as int?) ?? 0).compareTo((a['bitrate'] as int?) ?? 0));
+            final selectedUrl = audioFormats.first['url'].toString();
+            _streamCache[videoId] = selectedUrl;
+            debugPrint('Resolved YouTube visionOS audio stream: $videoId');
+            return selectedUrl;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('visionOS audio stream error ($videoId): $e');
+    }
+    return '';
+  }
+
+  /// 4. MULTI-LAYER AUDIO RESOLUTION (JioSaavn 320kbps CDN -> visionOS Direct Stream -> Local Cache -> Fast Download)
   static Future<String> resolvePlayableAudio(String rawVideoId, {String? title, String? artist}) async {
     final videoId = rawVideoId.replaceFirst('yt_', '').trim();
     if (videoId.isEmpty) return '';
@@ -270,7 +334,18 @@ class YtMusicService {
       } catch (_) {}
     }
 
-    // Step B: Direct Local File Cache if already downloaded
+    // Step B: Direct Instant visionOS Stream URL (Bypasses PoToken & 403 Forbidden, instant <0.5s playback)
+    try {
+      final visionUrl = await getVisionOSAudioStreamUrl(videoId);
+      if (visionUrl.isNotEmpty && visionUrl.startsWith('http')) {
+        debugPrint('Serving YouTube track via visionOS Direct Stream: $videoId');
+        return visionUrl;
+      }
+    } catch (e) {
+      debugPrint('visionOS resolution error: $e');
+    }
+
+    // Step C: Direct Local File Cache if already downloaded
     try {
       final tempDir = Directory.systemTemp;
       final cachedFile = File('${tempDir.path}/exotic_yt_$videoId.m4a');
@@ -280,7 +355,7 @@ class YtMusicService {
       }
     } catch (_) {}
 
-    // Step C: Fast direct buffer download to local file (100% playable via DeviceFileSource)
+    // Step D: Fast direct buffer download to local file fallback
     try {
       final cachedPath = await downloadAudioToCache(videoId);
       if (cachedPath.isNotEmpty && File(cachedPath).existsSync()) {
@@ -290,12 +365,6 @@ class YtMusicService {
     } catch (e) {
       debugPrint('Error in downloadAudioToCache: $e');
     }
-
-    // Step D: Piped audio stream fallback
-    try {
-      final piped = await getPipedAudioStreamUrl(videoId);
-      if (piped.isNotEmpty) return piped;
-    } catch (_) {}
 
     // Step E: Direct Stream Manifest URL fallback
     final direct = await getDirectAudioStreamUrl(videoId);

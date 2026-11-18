@@ -7,6 +7,7 @@ import '../data/music_data.dart';
 import '../services/drive_engine_service.dart';
 import '../services/saavn_api_service.dart';
 import '../services/yt_music_service.dart';
+import '../services/notification_service.dart';
 
 enum LoopState { off, loopAll, loopOne }
 
@@ -54,6 +55,11 @@ class AudioPlayerProvider with ChangeNotifier {
 
   AudioPlayerProvider() {
     _initListeners();
+    NotificationService.initialize(
+      onPrevious: () => playPrevious(),
+      onPlayPause: () => togglePlayPause(),
+      onNext: () => playNext(),
+    );
   }
 
   void _initListeners() {
@@ -64,8 +70,22 @@ class AudioPlayerProvider with ChangeNotifier {
       }
       if (_isPlaying) {
         _startSpectrumAnimation();
+        NotificationService.onPlaybackResumed();
+        if (currentSong != null) {
+          NotificationService.showPlaybackNotification(
+            song: currentSong!,
+            isPlaying: true,
+          );
+        }
       } else {
         _stopSpectrumAnimation();
+        NotificationService.onPlaybackPausedOrStopped(currentSong);
+        if (currentSong != null) {
+          NotificationService.showPlaybackNotification(
+            song: currentSong!,
+            isPlaying: false,
+          );
+        }
       }
       notifyListeners();
     });
