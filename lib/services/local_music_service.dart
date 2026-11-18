@@ -1,17 +1,89 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/song_model.dart';
 
 class LocalMusicService {
   static const String _prefFavLocalKey = 'favorite_local_song_ids';
+  static const MethodChannel _channel = MethodChannel('com.global.exotic/device_audio');
 
-  /// Scans device storage for all audio files
+  /// Requests storage permission via native Android MethodChannel
+  static Future<bool> requestStoragePermission() async {
+    try {
+      final res = await _channel.invokeMethod('requestPermission');
+      return res == true;
+    } catch (e) {
+      debugPrint('requestStoragePermission error: $e');
+      return false;
+    }
+  }
+
+  /// Checks if storage permission is currently granted
+  static Future<bool> checkStoragePermission() async {
+    try {
+      final res = await _channel.invokeMethod('checkPermission');
+      return res == true;
+    } catch (e) {
+      debugPrint('checkStoragePermission error: $e');
+      return false;
+    }
+  }
+
+  /// Scans device storage for all audio files (MediaStore Native + Filesystem BFS fallback)
   static Future<List<Song>> scanDeviceAudioFiles() async {
     final List<Song> foundSongs = [];
     final Set<String> processedPaths = {};
 
-    // Standard Android media directories
+    // 1. Native MediaStore Content Query (Android 5 to Android 15+)
+    try {
+      final hasPerm = await checkStoragePermission();
+      if (!hasPerm) {
+        await requestStoragePermission();
+      }
+
+      final rawList = await _channel.invokeMethod('getDeviceAudioFiles');
+      if (rawList is List && rawList.isNotEmpty) {
+        for (final item in rawList) {
+          try {
+            final map = Map<String, dynamic>.from(item as Map);
+            final path = map['path']?.toString() ?? '';
+            if (path.isEmpty || processedPaths.contains(path)) continue;
+            processedPaths.add(path);
+
+            final int durationMs = (map['durationMs'] as num?)?.toInt() ?? 0;
+            final title = map['title']?.toString().trim() ?? 'Local Track';
+            final artist = map['artist']?.toString().trim() ?? 'Unknown Artist';
+            final album = map['album']?.toString().trim() ?? 'Device Storage';
+
+            foundSongs.add(
+              Song(
+                id: map['id']?.toString() ?? 'local_${path.hashCode}',
+                title: title.isNotEmpty ? title : 'Local Track',
+                artist: artist.isNotEmpty ? artist : 'Unknown Artist',
+                album: album.isNotEmpty ? album : 'Device Storage',
+                duration: Duration(milliseconds: durationMs > 0 ? durationMs : 180000),
+                coverUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+                audioUrl: path,
+                genre: '',
+                language: 'local',
+              ),
+            );
+          } catch (e) {
+            debugPrint('Error parsing MediaStore song: $e');
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Native MediaStore query error: $e');
+    }
+
+    if (foundSongs.isNotEmpty) {
+      foundSongs.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
+      return foundSongs;
+    }
+
+    // 2. Fallback: Safe BFS Filesystem Directory Traversal
     final List<String> candidatePaths = [
       '/storage/emulated/0/Music',
       '/storage/emulated/0/Download',
@@ -28,8 +100,8 @@ class LocalMusicService {
       try {
         final dir = Directory(pathStr);
         if (await dir.exists()) {
-          final entries = dir.listSync(recursive: true, followLinks: false);
-          for (final entity in entries) {
+          final list = dir.listSync(recursive: false, followLinks: false);
+          for (final entity in list) {
             if (entity is File) {
               final lowerPath = entity.path.toLowerCase();
               final ext = audioExtensions.firstWhere(
@@ -44,6 +116,24 @@ class LocalMusicService {
                   foundSongs.add(song);
                 }
               }
+            } else if (entity is Directory) {
+              try {
+                final subEntries = entity.listSync(recursive: false, followLinks: false);
+                for (final sub in subEntries) {
+                  if (sub is File) {
+                    final lowerPath = sub.path.toLowerCase();
+                    final ext = audioExtensions.firstWhere(
+                      (e) => lowerPath.endsWith(e),
+                      orElse: () => '',
+                    );
+                    if (ext.isNotEmpty && !processedPaths.contains(sub.path)) {
+                      processedPaths.add(sub.path);
+                      final song = _parseFileToSong(sub);
+                      if (song != null) foundSongs.add(song);
+                    }
+                  }
+                }
+              } catch (_) {}
             }
           }
         }
@@ -52,7 +142,6 @@ class LocalMusicService {
       }
     }
 
-    // Sort alphabetically by title
     foundSongs.sort((a, b) => a.title.toLowerCase().compareTo(b.title.toLowerCase()));
     return foundSongs;
   }

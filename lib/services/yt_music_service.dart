@@ -156,15 +156,111 @@ class YtMusicService {
     return '';
   }
 
-  /// 4. MULTI-LAYER AUDIO RESOLUTION (JioSaavn CDN -> Local Cache -> Piped -> Direct)
+  static HttpServer? _proxyServer;
+  static int? _proxyPort;
+
+  /// Starts a local in-app loopback HTTP proxy server to stream YouTube audio directly to ExoPlayer without 403 Forbidden
+  static Future<int> _ensureProxyServerStarted() async {
+    if (_proxyServer != null && _proxyPort != null) return _proxyPort!;
+    try {
+      _proxyServer = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      _proxyPort = _proxyServer!.port;
+      debugPrint('Local YouTube Audio Proxy Server started on 127.0.0.1:$_proxyPort');
+
+      _proxyServer!.listen((HttpRequest request) async {
+        try {
+          final videoId = request.uri.queryParameters['v'] ?? '';
+          if (videoId.isEmpty) {
+            request.response.statusCode = HttpStatus.badRequest;
+            await request.response.close();
+            return;
+          }
+
+          final tempDir = Directory.systemTemp;
+          final cachedFile = File('${tempDir.path}/exotic_yt_$videoId.m4a');
+
+          // If fully cached on disk, stream directly from disk
+          if (await cachedFile.exists() && (await cachedFile.length()) > 40000) {
+            request.response.headers.contentType = ContentType('audio', 'mp4');
+            request.response.headers.set('Accept-Ranges', 'bytes');
+            await request.response.addStream(cachedFile.openRead());
+            await request.response.close();
+            return;
+          }
+
+          StreamManifest manifest;
+          try {
+            manifest = await _yt.videos.streamsClient.getManifest(
+              videoId,
+              ytClients: [
+                YoutubeApiClient.ios,
+                YoutubeApiClient.androidVr,
+              ],
+            ).timeout(const Duration(seconds: 5));
+          } catch (_) {
+            manifest = await _yt.videos.streamsClient.getManifest(videoId).timeout(const Duration(seconds: 5));
+          }
+
+          final audioStreams = manifest.audioOnly;
+          if (audioStreams.isEmpty) {
+            request.response.statusCode = HttpStatus.notFound;
+            await request.response.close();
+            return;
+          }
+
+          final mp4Streams = audioStreams.where((s) => s.container.name.toLowerCase() == 'mp4' || s.codec.mimeType.contains('mp4')).toList();
+          final streamInfo = mp4Streams.isNotEmpty ? mp4Streams.sortByBitrate().first : audioStreams.sortByBitrate().first;
+
+          request.response.headers.contentType = ContentType('audio', 'mp4');
+          request.response.headers.set('Accept-Ranges', 'bytes');
+          if (streamInfo.size.totalBytes > 0) {
+            request.response.headers.contentLength = streamInfo.size.totalBytes;
+          }
+
+          final audioStream = _yt.videos.streamsClient.get(streamInfo);
+          final cacheSink = cachedFile.openWrite();
+
+          await for (final chunk in audioStream) {
+            request.response.add(chunk);
+            cacheSink.add(chunk);
+          }
+
+          await request.response.close();
+          await cacheSink.flush();
+          await cacheSink.close();
+        } catch (e) {
+          debugPrint('Proxy stream error ($e)');
+          try {
+            await request.response.close();
+          } catch (_) {}
+        }
+      });
+
+      return _proxyPort!;
+    } catch (e) {
+      debugPrint('Error starting local proxy server: $e');
+      return 0;
+    }
+  }
+
+  /// 4. MULTI-LAYER AUDIO RESOLUTION (JioSaavn 320kbps CDN -> Local Cache -> Local Proxy Server -> Direct)
   static Future<String> resolvePlayableAudio(String rawVideoId, {String? title, String? artist}) async {
     final videoId = rawVideoId.replaceFirst('yt_', '').trim();
     if (videoId.isEmpty) return '';
 
     // Step A: Instant JioSaavn 320kbps CDN Match if song title/artist available
     if (title != null && title.trim().isNotEmpty) {
-      final cleanT = cleanTitle(title);
-      final cleanA = (artist ?? '').replaceAll(' - Topic', '').trim();
+      String cleanT = cleanTitle(title);
+      String cleanA = (artist ?? '').replaceAll(' - Topic', '').trim();
+
+      if (cleanT.contains(' - ')) {
+        final parts = cleanT.split(' - ');
+        if (parts.length >= 2) {
+          cleanA = parts[0].trim();
+          cleanT = parts.sublist(1).join(' - ').trim();
+        }
+      }
+
       try {
         final matches = await SaavnApiService.searchSongs('$cleanT $cleanA', limit: 2);
         if (matches.isNotEmpty && matches.first.audioUrl.isNotEmpty && matches.first.audioUrl.startsWith('http')) {
@@ -174,25 +270,29 @@ class YtMusicService {
       } catch (_) {}
     }
 
-    // Step B: Direct Local File Cache (100% immune to 403 and streaming drops)
+    // Step B: Direct Local File Cache if already downloaded
     try {
-      final cached = await downloadAudioToCache(videoId).timeout(const Duration(seconds: 4));
-      if (cached.isNotEmpty) {
-        debugPrint('Serving YouTube track via local cache: $cached');
-        return cached;
+      final tempDir = Directory.systemTemp;
+      final cachedFile = File('${tempDir.path}/exotic_yt_$videoId.m4a');
+      if (await cachedFile.exists() && (await cachedFile.length()) > 40000) {
+        debugPrint('Serving YouTube track from local cache: ${cachedFile.path}');
+        return cachedFile.path;
       }
     } catch (_) {}
 
-    // Step C: Piped Proxy Stream
+    // Step C: Progressive Streaming via Local Loopback Proxy (100% immune to 403 Forbidden)
     try {
-      final piped = await getPipedAudioStreamUrl(videoId);
-      if (piped.isNotEmpty) {
-        debugPrint('Serving YouTube track via Piped proxy: $piped');
-        return piped;
+      final port = await _ensureProxyServerStarted();
+      if (port > 0) {
+        final proxyUrl = 'http://127.0.0.1:$port/stream?v=$videoId';
+        debugPrint('Serving YouTube track via local loopback proxy: $proxyUrl');
+        return proxyUrl;
       }
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('Error getting proxy URL: $e');
+    }
 
-    // Step D: Direct Stream Manifest URL
+    // Step D: Direct Stream Manifest URL fallback
     final direct = await getDirectAudioStreamUrl(videoId);
     if (direct.isNotEmpty) return direct;
 
@@ -249,9 +349,16 @@ class YtMusicService {
           .replaceAll(RegExp(r'[^\w\s]'), ' ')
           .trim();
       final cleanA = rawArtist.split(',').first.trim();
-      final query = '$cleanT $cleanA official audio';
+      final query = '$cleanT $cleanA';
 
-      final results = await _yt.search.search(query).timeout(const Duration(seconds: 5));
+      // 1. Try instant JioSaavn match
+      final saavnMatches = await SaavnApiService.searchSongs(query, limit: 2);
+      if (saavnMatches.isNotEmpty && saavnMatches.first.audioUrl.isNotEmpty && saavnMatches.first.audioUrl.startsWith('http')) {
+        return saavnMatches.first.audioUrl;
+      }
+
+      // 2. Search on YouTube
+      final results = await _yt.search.search('$query official audio').timeout(const Duration(seconds: 5));
       for (final video in results) {
         final sec = video.duration?.inSeconds ?? 0;
         if (video.isLive || sec < 45 || sec > 720) continue;
@@ -268,7 +375,7 @@ class YtMusicService {
     return '';
   }
 
-  /// 4. DYNAMIC ARTIST DP (Fetches real YouTube Channel Profile Picture)
+  /// 4. DYNAMIC ARTIST DP (Fetches real 500x500 Portrait or Official Channel Logo - ZERO unsplash)
   static Future<String> getArtistProfilePic(String artistName) async {
     final clean = artistName.trim();
     if (clean.isEmpty) return '';
@@ -277,6 +384,16 @@ class YtMusicService {
       return _artistDpCache[cacheKey]!;
     }
 
+    // Step 1: Official JioSaavn 500x500 Studio Portrait Photo (High Definition)
+    try {
+      final saavnPic = await SaavnApiService.getArtistProfilePic(clean);
+      if (saavnPic.isNotEmpty) {
+        _artistDpCache[cacheKey] = saavnPic;
+        return saavnPic;
+      }
+    } catch (_) {}
+
+    // Step 2: Official YouTube Channel Logo (Circular Avatar)
     try {
       final results = await _yt.search.search('$clean official channel').timeout(const Duration(seconds: 5));
       for (final video in results) {
@@ -294,7 +411,7 @@ class YtMusicService {
       debugPrint('Error getting artist DP for $artistName: $e');
     }
 
-    return 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400';
+    return '';
   }
 
   /// 5. DYNAMIC ARTIST SONGS (Full Discography)
@@ -334,13 +451,22 @@ class YtMusicService {
     }
   }
 
-  /// 7. SEARCH ARTIST CHANNELS (Dynamic & Scalable)
+  /// 7. SEARCH ARTIST CHANNELS (Real Photos from JioSaavn & YouTube Channel Avatars)
   static Future<List<Artist>> searchArtists(String query, {int limit = 6}) async {
     final clean = query.trim();
     if (clean.isEmpty) return [];
 
+    // Step 1: Search via JioSaavn for verified artist portraits
     try {
-      final results = await _yt.search.search('$clean official audio').timeout(const Duration(seconds: 5));
+      final saavnArtists = await SaavnApiService.searchArtists(clean, limit: limit);
+      if (saavnArtists.isNotEmpty) {
+        return saavnArtists;
+      }
+    } catch (_) {}
+
+    // Step 2: Search via YouTube channel logo (NOT video thumbnails)
+    try {
+      final results = await _yt.search.search('$clean official channel').timeout(const Duration(seconds: 5));
       final Set<String> seenArtists = {};
       final List<Artist> artists = [];
 
@@ -349,9 +475,7 @@ class YtMusicService {
         if (rawAuthor.isEmpty || seenArtists.contains(rawAuthor.toLowerCase())) continue;
         seenArtists.add(rawAuthor.toLowerCase());
 
-        String dp = video.thumbnails.highResUrl.isNotEmpty
-            ? video.thumbnails.highResUrl
-            : video.thumbnails.mediumResUrl;
+        final dp = await getArtistProfilePic(rawAuthor);
 
         artists.add(
           Artist(
@@ -377,6 +501,7 @@ class YtMusicService {
 
   /// Close resources
   static void dispose() {
+    _proxyServer?.close(force: true);
     _yt.close();
   }
 }

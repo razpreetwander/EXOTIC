@@ -263,13 +263,36 @@ class _LibraryScreenState extends State<LibraryScreen> {
                           },
                         )),
 
-                  // 3. Artists List (Round Avatars matching Screenshot 2)
+                  if (_selectedFilter == 'Playlists' && playlists.isEmpty && libraryProvider.userPlaylists.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.queue_music, color: Colors.white38, size: 48),
+                            SizedBox(height: 12),
+                            Text('No playlists yet', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            SizedBox(height: 6),
+                            Text('Tap + in top right to create your first playlist', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                  // 3. Artists List (Clean Avatars without dummy data)
                   if (_selectedFilter == 'All' || _selectedFilter == 'Artists')
                     ...artists.map((artist) => ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
                             radius: 27,
-                            backgroundImage: NetworkImage(artist.imageUrl),
+                            backgroundColor: const Color(0xFF242424),
+                            backgroundImage: (artist.imageUrl.isNotEmpty && !artist.imageUrl.contains('unsplash.com'))
+                                ? NetworkImage(artist.imageUrl)
+                                : null,
+                            child: (artist.imageUrl.isEmpty || artist.imageUrl.contains('unsplash.com'))
+                                ? Text(artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                                    style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 18))
+                                : null,
                           ),
                           title: Text(artist.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
                           subtitle: const Text('Artist', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
@@ -280,6 +303,22 @@ class _LibraryScreenState extends State<LibraryScreen> {
                             );
                           },
                         )),
+
+                  if (_selectedFilter == 'Artists' && artists.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(
+                        child: Column(
+                          children: [
+                            Icon(Icons.people_outline, color: Colors.white38, size: 48),
+                            SizedBox(height: 12),
+                            Text('No followed artists yet', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                            SizedBox(height: 6),
+                            Text('Search for artists and tap Follow to see them here', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                    ),
 
                   const SizedBox(height: 16),
 

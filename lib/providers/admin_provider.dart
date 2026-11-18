@@ -26,42 +26,8 @@ class AdminProvider with ChangeNotifier {
   final String _firebaseStorageBucket = 'exoticglobalmusic.firebasestorage.app';
   final bool _isFirebaseConnected = true;
 
-  // Realtime Artists Catalog
-  List<Artist> _artistsCatalog = [
-    Artist(
-      id: 'art_01',
-      name: 'The Weeknd',
-      imageUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=400',
-      bannerUrl: 'https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?q=80&w=1200',
-      bio: 'Canadian singer, songwriter, and record producer known for his sonic versatility and dark lyricism.',
-      language: 'English',
-      artistType: 'Playback Singer',
-      genre: 'Pop / Synthwave',
-      monthlyListeners: 105000000,
-    ),
-    Artist(
-      id: 'art_02',
-      name: 'Arijit Singh',
-      imageUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
-      bannerUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=1200',
-      bio: 'Indian playback singer and music composer. The king of soulful Bollywood romantic anthems.',
-      language: 'Hindi',
-      artistType: 'Playback Singer',
-      genre: 'Bollywood',
-      monthlyListeners: 42000000,
-    ),
-    Artist(
-      id: 'art_03',
-      name: 'Dua Lipa',
-      imageUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400',
-      bannerUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200',
-      bio: 'English and Albanian singer and songwriter. Known for her disco-pop sound.',
-      language: 'English',
-      artistType: 'Pop Icon',
-      genre: 'Pop / Dance',
-      monthlyListeners: 78000000,
-    ),
-  ];
+  // Realtime Artists Catalog (Populated dynamically from user follows & creations - Zero dummy)
+  List<Artist> _artistsCatalog = [];
 
   List<String> _languagesList = ['Hindi', 'Punjabi', 'English', 'Haryanvi', 'Bhojpuri', 'Rajasthani', 'Spanish', 'Tamil'];
   List<String> _artistTypesList = ['Playback Singer', 'Rapper', 'Indie Artist', 'EDM DJ', 'Music Director', 'Sufi Artist', 'Classical Singer'];

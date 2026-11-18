@@ -222,6 +222,39 @@ class SaavnApiService {
     return null;
   }
 
+  static final Map<String, String> _artistPicMemoryCache = {};
+
+  /// Get Official High-Resolution 500x500 Artist Portrait
+  static Future<String> getArtistProfilePic(String artistName) async {
+    final clean = artistName.trim();
+    if (clean.isEmpty) return '';
+    final key = clean.toLowerCase();
+    if (_artistPicMemoryCache.containsKey(key)) {
+      return _artistPicMemoryCache[key]!;
+    }
+
+    try {
+      final uri = Uri.parse('$baseUrl/api/search/artists?query=${Uri.encodeComponent(clean)}&limit=1');
+      final res = await http.get(uri).timeout(const Duration(seconds: 8));
+      if (res.statusCode == 200) {
+        final results = jsonDecode(res.body)['data']?['results'] as List? ?? [];
+        if (results.isNotEmpty) {
+          final images = results.first['image'] as List? ?? [];
+          if (images.isNotEmpty) {
+            final url = images.last['url']?.toString() ?? '';
+            if (url.isNotEmpty && url.startsWith('http')) {
+              _artistPicMemoryCache[key] = url;
+              return url;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('SaavnApiService.getArtistProfilePic error: $e');
+    }
+    return '';
+  }
+
   /// 6. Artist Profile Details, Top Songs, Albums & Similar Artists
   /// Endpoint: /api/artists/{id}?songCount=20&albumCount=10
   static Future<Map<String, dynamic>?> getArtistDetails(String artistId) async {

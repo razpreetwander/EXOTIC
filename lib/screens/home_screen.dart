@@ -1327,7 +1327,19 @@ class _HomeScreenState extends State<HomeScreen> {
               margin: const EdgeInsets.only(right: 14),
               child: Column(
                 children: [
-                  CircleAvatar(radius: 42, backgroundImage: NetworkImage(artist.imageUrl)),
+                  CircleAvatar(
+                    radius: 42,
+                    backgroundColor: const Color(0xFF242424),
+                    backgroundImage: (artist.imageUrl.isNotEmpty && !artist.imageUrl.contains('unsplash.com'))
+                        ? NetworkImage(artist.imageUrl)
+                        : null,
+                    child: (artist.imageUrl.isEmpty || artist.imageUrl.contains('unsplash.com'))
+                        ? Text(
+                            artist.name.isNotEmpty ? artist.name[0].toUpperCase() : 'A',
+                            style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold, fontSize: 24),
+                          )
+                        : null,
+                  ),
                   const SizedBox(height: 6),
                   Text(artist.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
                   const Text('Artist', style: TextStyle(color: AppColors.textSecondary, fontSize: 10)),

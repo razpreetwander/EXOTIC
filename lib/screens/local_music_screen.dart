@@ -275,6 +275,43 @@ class _LocalMusicScreenState extends State<LocalMusicScreen> {
                 s.album.toLowerCase().contains(_searchQuery);
           }).toList();
 
+    if (sourceSongs.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.folder_open, color: Colors.white38, size: 64),
+              const SizedBox(height: 16),
+              const Text(
+                'No local audio files found',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Grant audio & storage permission to scan all playable tracks on your device.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.white54, fontSize: 13),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                ),
+                onPressed: _scanFiles,
+                icon: const Icon(Icons.refresh, color: Colors.black),
+                label: const Text('Scan Device Storage', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     if (filtered.isEmpty) {
       return const Center(
         child: Text('No matching local tracks found.', style: TextStyle(color: Colors.white54, fontSize: 14)),
