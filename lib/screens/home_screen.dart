@@ -442,20 +442,20 @@ class _HomeScreenState extends State<HomeScreen> {
       SliverToBoxAdapter(
         child: SizedBox(
           height: 220,
-          child: (library.recentlyPlayedSongs.isNotEmpty)
+          child: (library.recentlyPlayed.isNotEmpty)
               ? ListView.builder(
                   scrollDirection: Axis.horizontal,
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  itemCount: library.recentlyPlayedSongs.length,
+                  itemCount: library.recentlyPlayed.length,
                   itemBuilder: (context, index) {
-                    final s = library.recentlyPlayedSongs[index];
+                    final s = library.recentlyPlayed[index];
                     return _buildRecommendedCard(
                       type: 'HISTORY',
                       title: s.title,
                       artist: s.artist,
                       imageUrl: s.coverUrl,
-                      onTap: () => player.playSong(s, contextPlaylist: library.recentlyPlayedSongs),
+                      onTap: () => player.playSong(s, contextPlaylist: library.recentlyPlayed),
                     );
                   },
                 )
@@ -805,15 +805,15 @@ class _HomeScreenState extends State<HomeScreen> {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _saavnTrendingHits.length,
+            itemCount: _trendingSongs.length,
             itemBuilder: (context, index) {
-              final song = _saavnTrendingHits[index];
+              final song = _trendingSongs[index];
               return _buildRecommendedCard(
                 type: 'HOT TRACK',
                 title: song.title,
                 artist: song.artist,
                 imageUrl: song.coverUrl,
-                onTap: () => player.playSong(song, contextPlaylist: _saavnTrendingHits),
+                onTap: () => player.playSong(song, contextPlaylist: _trendingSongs),
               );
             },
           ),
@@ -826,8 +826,8 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 16),
         sliver: SliverList(
           delegate: SliverChildListDelegate(
-            _saavnTrendingHits.isNotEmpty
-                ? _saavnTrendingHits.take(4).map((s) {
+            _trendingSongs.isNotEmpty
+                ? _trendingSongs.take(4).map((s) {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: _buildLatestReleaseCard(
@@ -836,8 +836,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         trackInfo: 'Single • ${s.album}',
                         imageUrl: s.coverUrl,
                         previewText: 'Play Track',
-                        onPreview: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
-                        onPlay: () => player.playSong(s, contextPlaylist: _saavnTrendingHits),
+                        onPreview: () => player.playSong(s, contextPlaylist: _trendingSongs),
+                        onPlay: () => player.playSong(s, contextPlaylist: _trendingSongs),
                       ),
                     );
                   }).toList()
