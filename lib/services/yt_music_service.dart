@@ -243,7 +243,7 @@ class YtMusicService {
     }
   }
 
-  /// 4. MULTI-LAYER AUDIO RESOLUTION (JioSaavn 320kbps CDN -> Local Cache -> Local Proxy Server -> Direct)
+  /// 4. MULTI-LAYER AUDIO RESOLUTION (JioSaavn 320kbps CDN -> Local Cache -> Fast Local Download -> Piped/Direct)
   static Future<String> resolvePlayableAudio(String rawVideoId, {String? title, String? artist}) async {
     final videoId = rawVideoId.replaceFirst('yt_', '').trim();
     if (videoId.isEmpty) return '';
@@ -274,25 +274,30 @@ class YtMusicService {
     try {
       final tempDir = Directory.systemTemp;
       final cachedFile = File('${tempDir.path}/exotic_yt_$videoId.m4a');
-      if (await cachedFile.exists() && (await cachedFile.length()) > 40000) {
+      if (await cachedFile.exists() && (await cachedFile.length()) > 30000) {
         debugPrint('Serving YouTube track from local cache: ${cachedFile.path}');
         return cachedFile.path;
       }
     } catch (_) {}
 
-    // Step C: Progressive Streaming via Local Loopback Proxy (100% immune to 403 Forbidden)
+    // Step C: Fast direct buffer download to local file (100% playable via DeviceFileSource)
     try {
-      final port = await _ensureProxyServerStarted();
-      if (port > 0) {
-        final proxyUrl = 'http://127.0.0.1:$port/stream?v=$videoId';
-        debugPrint('Serving YouTube track via local loopback proxy: $proxyUrl');
-        return proxyUrl;
+      final cachedPath = await downloadAudioToCache(videoId);
+      if (cachedPath.isNotEmpty && File(cachedPath).existsSync()) {
+        debugPrint('Serving YouTube track via newly cached local file: $cachedPath');
+        return cachedPath;
       }
     } catch (e) {
-      debugPrint('Error getting proxy URL: $e');
+      debugPrint('Error in downloadAudioToCache: $e');
     }
 
-    // Step D: Direct Stream Manifest URL fallback
+    // Step D: Piped audio stream fallback
+    try {
+      final piped = await getPipedAudioStreamUrl(videoId);
+      if (piped.isNotEmpty) return piped;
+    } catch (_) {}
+
+    // Step E: Direct Stream Manifest URL fallback
     final direct = await getDirectAudioStreamUrl(videoId);
     if (direct.isNotEmpty) return direct;
 
@@ -453,8 +458,11 @@ class YtMusicService {
 
   /// 7. SEARCH ARTIST CHANNELS (Real Photos from JioSaavn & YouTube Channel Avatars)
   static Future<List<Artist>> searchArtists(String query, {int limit = 6}) async {
-    final clean = query.trim();
+    String clean = query.trim();
     if (clean.isEmpty) return [];
+    if (clean.toLowerCase() == 'international') {
+      clean = 'English Pop';
+    }
 
     // Step 1: Search via JioSaavn for verified artist portraits
     try {

@@ -64,17 +64,41 @@ class _HomeScreenState extends State<HomeScreen> {
       final preferredArtists = prefs.getStringList('user_preferred_artists') ?? [];
       final preferredLanguages = prefs.getStringList('user_preferred_languages') ?? [];
 
-      final primaryArtist = preferredArtists.isNotEmpty ? preferredArtists.first : 'Arijit Singh';
-      final secondaryArtist = preferredArtists.length > 1 ? preferredArtists[1] : primaryArtist;
-      final lang1 = preferredLanguages.isNotEmpty ? preferredLanguages[0] : 'Hindi';
+      final bool isInternational = (preferredLanguages.isNotEmpty &&
+              (preferredLanguages.first.toLowerCase() == 'international' ||
+                  preferredLanguages.first.toLowerCase() == 'english')) ||
+          (preferredLanguages.isEmpty &&
+              preferredArtists.any((a) => ['The Weeknd', 'Taylor Swift', 'Drake', 'BTS', 'Dua Lipa', 'Justin Bieber', 'Alan Walker', 'Katy Perry', 'Ed Sheeran'].contains(a)));
+
+      final bool isPunjabi = preferredLanguages.isNotEmpty && preferredLanguages.first.toLowerCase() == 'punjabi';
+
+      final String defaultArtist = isInternational ? 'The Weeknd' : (isPunjabi ? 'Karan Aujla' : 'Arijit Singh');
+      final String defaultSecondary = isInternational ? 'Taylor Swift' : (isPunjabi ? 'Diljit Dosanjh' : 'Shreya Ghoshal');
+
+      final primaryArtist = preferredArtists.isNotEmpty ? preferredArtists.first : defaultArtist;
+      final secondaryArtist = preferredArtists.length > 1
+          ? preferredArtists[1]
+          : (preferredArtists.isNotEmpty ? preferredArtists.first : defaultSecondary);
+
+      final lang1 = preferredLanguages.isNotEmpty ? preferredLanguages[0] : (isInternational ? 'International' : 'Hindi');
       final lang2 = preferredLanguages.length > 1
           ? preferredLanguages[1]
-          : (preferredLanguages.isNotEmpty ? preferredLanguages[0] : 'Punjabi');
+          : (preferredLanguages.isNotEmpty ? preferredLanguages[0] : (isInternational ? 'English' : 'Punjabi'));
 
       _lang1Name = lang1;
       _lang2Name = lang2;
       _primaryArtistName = primaryArtist;
       _secondaryArtistName = secondaryArtist;
+
+      // Dynamic Section Search Queries based on user language preferences
+      final String releasesQuery = isInternational ? 'New Releases English' : 'New Releases $lang1';
+      final String recentQuery = isInternational ? 'Latest Pop Hits' : 'Latest Tracks $lang1';
+      final String dailyHitsQuery = isInternational ? 'Global Daily Hits' : 'Daily Hits $lang1';
+      final String suggestedArtistsQuery = isInternational ? 'English Pop' : lang1;
+      final String trendingQuery = isInternational
+          ? 'Global Top 50'
+          : (isPunjabi ? 'Trending Punjabi Hits' : 'Trending Hits India');
+      final String popularQuery = isInternational ? 'Global Pop Superhits' : 'Popular Superhits $lang1';
 
       // 1. DYNAMIC ARTISTS: Fetch real DP from YouTube / JioSaavn (NO hardcoded maps!)
       final List<Artist> favArtists = [];
@@ -84,7 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Artist(
             id: 'artist_${name.toLowerCase().replaceAll(' ', '_')}',
             name: name,
-            imageUrl: dp.isNotEmpty ? dp : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+            imageUrl: dp,
             bio: '$name verified artist on EXOTIC MUSIC.',
             language: lang1,
             artistType: 'Artist',
@@ -96,16 +120,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // 2. PARALLEL DYNAMIC FETCH for all 12 sections
       final quickPicksFuture = SaavnApiService.searchSongs(primaryArtist, limit: 8);
-      final recommendedFuture = SaavnApiService.getFamousSongsForLanguage(lang1, limit: 10);
-      final featuredReleasesFuture = SaavnApiService.searchSongs('New Releases $lang1', limit: 10);
-      final recentFallbackFuture = SaavnApiService.searchSongs('Latest Tracks $lang1', limit: 10);
+      final recommendedFuture = SaavnApiService.getFamousSongsForLanguage(isInternational ? 'International' : lang1, limit: 10);
+      final featuredReleasesFuture = SaavnApiService.searchSongs(releasesQuery, limit: 10);
+      final recentFallbackFuture = SaavnApiService.searchSongs(recentQuery, limit: 10);
       final albumsFuture = SaavnApiService.searchAlbums(primaryArtist, limit: 8);
-      final recommendedTodayFuture = SaavnApiService.searchSongs('Daily Hits $lang1', limit: 10);
-      final toGetStartedFuture = SaavnApiService.getFamousSongsForLanguage(lang2, limit: 10);
-      final suggestedArtistsFuture = SaavnApiService.searchArtists(lang1, limit: 8);
+      final recommendedTodayFuture = SaavnApiService.searchSongs(dailyHitsQuery, limit: 10);
+      final toGetStartedFuture = SaavnApiService.getFamousSongsForLanguage(isInternational ? 'English' : lang2, limit: 10);
+      final suggestedArtistsFuture = SaavnApiService.searchArtists(suggestedArtistsQuery, limit: 8);
       final basedOnLatestFuture = SaavnApiService.searchSongs(secondaryArtist, limit: 10);
-      final trendingFuture = SaavnApiService.searchSongs('Trending Hits India', limit: 12);
-      final popularFuture = SaavnApiService.searchSongs('Popular Superhits $lang1', limit: 12);
+      final trendingFuture = SaavnApiService.searchSongs(trendingQuery, limit: 12);
+      final popularFuture = SaavnApiService.searchSongs(popularQuery, limit: 12);
 
       final quickSongs = await quickPicksFuture;
       final recSongs = await recommendedFuture;

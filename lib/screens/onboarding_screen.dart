@@ -349,9 +349,14 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     setState(() => _isLoadingArtists = true);
 
     try {
-      final query = category == 'For You'
-          ? (_selectedLanguages.isNotEmpty ? _selectedLanguages.first : 'Trending')
-          : category;
+      final String query;
+      if (category == 'For You') {
+        query = _selectedLanguages.isNotEmpty ? _selectedLanguages.first : 'Trending';
+      } else if (category.toLowerCase() == 'international') {
+        query = 'English Pop';
+      } else {
+        query = category;
+      }
 
       final saavnFuture = SaavnApiService.searchArtists(query, limit: 15);
       final ytFuture = YtMusicService.searchArtists(query, limit: 8);
@@ -362,17 +367,32 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
       final Set<String> seen = {};
       final List<Map<String, String>> list = [];
 
+      // 1. First add base verified artists for this category from _allArtists so verified HD portraits are preserved
+      final baseCategoryArtists = _allArtists.where((a) =>
+          category == 'For You' || a['category']?.toLowerCase() == category.toLowerCase()).toList();
+
+      for (final a in baseCategoryArtists) {
+        final name = a['name']?.trim() ?? '';
+        if (name.isNotEmpty && !seen.contains(name.toLowerCase())) {
+          seen.add(name.toLowerCase());
+          list.add(Map<String, String>.from(a));
+        }
+      }
+
+      // 2. Append dynamically discovered artists if they have valid portraits
       for (final a in [...saavnArtists, ...ytArtists]) {
         final cleanName = a.name.trim();
         if (cleanName.isEmpty || seen.contains(cleanName.toLowerCase())) continue;
         seen.add(cleanName.toLowerCase());
-        final img = a.imageUrl.isNotEmpty ? a.imageUrl : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400';
-        _artistImages[cleanName] = img;
-        list.add({
-          'name': cleanName,
-          'category': category,
-          'image': img,
-        });
+        final img = a.imageUrl.isNotEmpty ? a.imageUrl : '';
+        if (img.isNotEmpty && img.startsWith('http')) {
+          _artistImages[cleanName] = img;
+          list.add({
+            'name': cleanName,
+            'category': category,
+            'image': img,
+          });
+        }
       }
 
       if (mounted) {
@@ -1317,7 +1337,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                               CircleAvatar(
                                 radius: 46,
                                 backgroundColor: const Color(0xFF282828),
-                                backgroundImage: NetworkImage(img),
+                                backgroundImage: (img.isNotEmpty && img.startsWith('http')) ? NetworkImage(img) : null,
+                                onBackgroundImageError: (img.isNotEmpty && img.startsWith('http')) ? (e, s) {} : null,
+                                child: (img.isEmpty || !img.startsWith('http'))
+                                    ? Text(
+                                        name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      )
+                                    : null,
                               ),
                               if (isSel)
                                 Positioned(

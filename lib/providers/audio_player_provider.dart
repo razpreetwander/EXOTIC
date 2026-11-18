@@ -251,6 +251,7 @@ class AudioPlayerProvider with ChangeNotifier {
         try {
           await _audioPlayer.stop();
           await _audioPlayer.play(DeviceFileSource(cleanPath));
+          loadingTimeoutTimer?.cancel();
           _isLoading = false;
           _isPlaying = true;
           _startSpectrumAnimation();
@@ -271,6 +272,11 @@ class AudioPlayerProvider with ChangeNotifier {
           await _audioPlayer.stop();
           await _audioPlayer.play(UrlSource(candidateUrl));
           success = true;
+          loadingTimeoutTimer?.cancel();
+          _isLoading = false;
+          _isPlaying = true;
+          _startSpectrumAnimation();
+          notifyListeners();
           debugPrint("Successfully started playing audio stream: $candidateUrl");
           break;
         } catch (e) {
@@ -290,6 +296,11 @@ class AudioPlayerProvider with ChangeNotifier {
               await _audioPlayer.play(UrlSource(ytStream));
             }
             success = true;
+            loadingTimeoutTimer?.cancel();
+            _isLoading = false;
+            _isPlaying = true;
+            _startSpectrumAnimation();
+            notifyListeners();
             debugPrint("Successfully recovered with YouTube audio fallback: ${currentSong!.title}");
           }
         } catch (err) {

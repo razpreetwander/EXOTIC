@@ -135,8 +135,11 @@ class SaavnApiService {
   /// Search Artists with full profile metadata
   /// Endpoint: /api/search/artists?query={name}&limit={limit}
   static Future<List<Artist>> searchArtists(String query, {int limit = 5}) async {
-    final clean = query.trim();
+    String clean = query.trim();
     if (clean.isEmpty) return [];
+    if (clean.toLowerCase() == 'international') {
+      clean = 'English Pop';
+    }
     try {
       final uri = Uri.parse('$baseUrl/api/search/artists?query=${Uri.encodeComponent(clean)}&limit=$limit');
       final res = await http.get(uri).timeout(const Duration(seconds: 8));
@@ -159,7 +162,7 @@ class SaavnApiService {
           Artist(
             id: id,
             name: name,
-            imageUrl: imgUrl.isNotEmpty ? imgUrl : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=400',
+            imageUrl: imgUrl,
             bio: '$name verified artist channel on EXOTIC MUSIC.',
             language: '',
             artistType: role,
