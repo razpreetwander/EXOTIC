@@ -330,13 +330,20 @@ class SaavnApiService {
     }
   }
 
-  /// 9. Real-Time Synced Lyrics Engine (LRCLIB + JioSaavn Fallback)
+  static final Map<String, List<LyricLine>> _lyricsMemoryCache = {};
+
+  /// 9. Real-Time Synced Lyrics Engine (Parallel LRCLIB + JioSaavn with Fast Cache)
   static Future<List<LyricLine>> fetchRealtimeLyrics(
     String rawTitle,
     String rawArtist, {
     int durationSeconds = 0,
     String? songId,
   }) async {
+    final cacheKey = '${songId ?? ""}_${rawTitle.toLowerCase()}_${rawArtist.toLowerCase()}';
+    if (_lyricsMemoryCache.containsKey(cacheKey)) {
+      return _lyricsMemoryCache[cacheKey]!;
+    }
+
     // Clean title and artist from suffixes like (From "Film"), [Official Video], etc.
     String title = Song.clean(rawTitle)
         .replaceAll(RegExp(r'\(.*?(from|feat|ft|official|video|audio|remix|version|deluxe|soundtrack).*?\)', caseSensitive: false), '')
@@ -349,37 +356,33 @@ class SaavnApiService {
     String artist = Song.clean(rawArtist).split(',').first.trim();
     if (artist.isEmpty) artist = rawArtist.trim();
 
-    try {
-      // Step A: Exact query with duration
-      String lrcUrl = 'https://lrclib.net/api/get?track_name=${Uri.encodeComponent(title)}&artist_name=${Uri.encodeComponent(artist)}';
-      if (durationSeconds > 0) {
-        lrcUrl += '&duration=$durationSeconds';
-      }
-
-      var res = await http.get(Uri.parse(lrcUrl)).timeout(const Duration(seconds: 6));
-      if (res.statusCode != 200 && durationSeconds > 0) {
-        final retryUrl = 'https://lrclib.net/api/get?track_name=${Uri.encodeComponent(title)}&artist_name=${Uri.encodeComponent(artist)}';
-        res = await http.get(Uri.parse(retryUrl)).timeout(const Duration(seconds: 6));
-      }
-
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final String? synced = data['syncedLyrics'];
-        final String? plain = data['plainLyrics'];
-        if (synced != null && synced.isNotEmpty) {
-          final parsed = _parseLrc(synced);
-          if (parsed.isNotEmpty) return parsed;
+    // Fast Parallel Execution: LRCLIB and JioSaavn at the same time (3.5s timeout)
+    final lrclibFuture = () async {
+      try {
+        final queryParam = durationSeconds > 0 ? '&duration=$durationSeconds' : '';
+        final lrcUrl = 'https://lrclib.net/api/get?track_name=${Uri.encodeComponent(title)}&artist_name=${Uri.encodeComponent(artist)}$queryParam';
+        final res = await http.get(Uri.parse(lrcUrl)).timeout(const Duration(milliseconds: 3500));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          final String? synced = data['syncedLyrics'];
+          final String? plain = data['plainLyrics'];
+          if (synced != null && synced.isNotEmpty) {
+            final parsed = _parseLrc(synced);
+            if (parsed.isNotEmpty) return parsed;
+          }
+          if (plain != null && plain.isNotEmpty) {
+            final parsed = _parsePlain(plain, durationSeconds);
+            if (parsed.isNotEmpty) return parsed;
+          }
         }
-        if (plain != null && plain.isNotEmpty) {
-          final parsed = _parsePlain(plain, durationSeconds);
-          if (parsed.isNotEmpty) return parsed;
-        }
-      } else {
-        // Step B: Search query on LRCLIB
+      } catch (_) {}
+
+      // Fallback search on LRCLIB
+      try {
         final searchUrl = 'https://lrclib.net/api/search?q=${Uri.encodeComponent("$title $artist")}';
-        final searchRes = await http.get(Uri.parse(searchUrl)).timeout(const Duration(seconds: 6));
-        if (searchRes.statusCode == 200) {
-          final List searchList = jsonDecode(searchRes.body) as List? ?? [];
+        final res = await http.get(Uri.parse(searchUrl)).timeout(const Duration(milliseconds: 3500));
+        if (res.statusCode == 200) {
+          final List searchList = jsonDecode(res.body) as List? ?? [];
           if (searchList.isNotEmpty) {
             final first = searchList.first;
             final String? synced = first['syncedLyrics'];
@@ -394,28 +397,44 @@ class SaavnApiService {
             }
           }
         }
+      } catch (_) {}
+      return <LyricLine>[];
+    }();
+
+    final saavnFuture = () async {
+      if (songId != null && songId.isNotEmpty) {
+        try {
+          final saavnLrcUrl = 'https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&ctx=web6dot0&api_version=4&_format=json&_marker=0&lyrics_id=${songId.trim()}';
+          final saavnRes = await http.get(Uri.parse(saavnLrcUrl)).timeout(const Duration(milliseconds: 3500));
+          if (saavnRes.statusCode == 200) {
+            final data = jsonDecode(saavnRes.body);
+            final String? lyricsHtml = data['lyrics'];
+            if (lyricsHtml != null && lyricsHtml.isNotEmpty) {
+              final plain = lyricsHtml.replaceAll('<br/>', '\n').replaceAll('<br>', '\n');
+              final parsed = _parsePlain(plain, durationSeconds);
+              if (parsed.isNotEmpty) return parsed;
+            }
+          }
+        } catch (_) {}
+      }
+      return <LyricLine>[];
+    }();
+
+    try {
+      final results = await Future.wait([lrclibFuture, saavnFuture]);
+      final lrclibLyrics = results[0];
+      final saavnLyrics = results[1];
+
+      if (lrclibLyrics.isNotEmpty) {
+        _lyricsMemoryCache[cacheKey] = lrclibLyrics;
+        return lrclibLyrics;
+      }
+      if (saavnLyrics.isNotEmpty) {
+        _lyricsMemoryCache[cacheKey] = saavnLyrics;
+        return saavnLyrics;
       }
     } catch (e) {
-      debugPrint('SaavnApiService: LRCLIB error: $e');
-    }
-
-    // Step C: JioSaavn fallback
-    if (songId != null && songId.isNotEmpty) {
-      try {
-        final saavnLrcUrl = 'https://www.jiosaavn.com/api.php?__call=lyrics.getLyrics&ctx=web6dot0&api_version=4&_format=json&_marker=0&lyrics_id=${songId.trim()}';
-        final saavnRes = await http.get(Uri.parse(saavnLrcUrl)).timeout(const Duration(seconds: 6));
-        if (saavnRes.statusCode == 200) {
-          final data = jsonDecode(saavnRes.body);
-          final String? lyricsHtml = data['lyrics'];
-          if (lyricsHtml != null && lyricsHtml.isNotEmpty) {
-            final plain = lyricsHtml.replaceAll('<br/>', '\n').replaceAll('<br>', '\n');
-            final parsed = _parsePlain(plain, durationSeconds);
-            if (parsed.isNotEmpty) return parsed;
-          }
-        }
-      } catch (e) {
-        debugPrint('SaavnApiService: JioSaavn lyrics fallback error: $e');
-      }
+      debugPrint('Error loading realtime lyrics: $e');
     }
 
     return [];

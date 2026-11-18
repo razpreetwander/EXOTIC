@@ -51,24 +51,32 @@ class LyricsTranslationService {
 
         String translatedBatch = '';
 
-        // Provider 1: MyMemory API (high accuracy for Indian & International languages)
+        // Provider 1: Official Google Translate Chrome API (Fastest & Accurate for all scripts)
         try {
-          final uri = Uri.parse('https://api.mymemory.translated.net/get?q=${Uri.encodeComponent(joinedText)}&langpair=auto|$targetLangCode');
-          final res = await http.get(uri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 5));
+          final uri = Uri.parse('https://clients5.google.com/translate_a/t?client=dict-chrome-ex&sl=auto&tl=$targetLangCode&q=${Uri.encodeComponent(joinedText)}');
+          final res = await http.get(uri, headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          }).timeout(const Duration(seconds: 4));
+
           if (res.statusCode == 200) {
             final data = jsonDecode(res.body);
-            final text = data['responseData']?['translatedText']?.toString() ?? '';
-            if (text.isNotEmpty && !text.toLowerCase().contains('quota exceeded')) {
-              translatedBatch = text;
+            if (data is List && data.isNotEmpty && data[0] is List && data[0].isNotEmpty) {
+              final text = data[0][0]?.toString() ?? '';
+              if (text.trim().isNotEmpty) {
+                translatedBatch = text;
+              }
             }
           }
         } catch (_) {}
 
-        // Provider 2: Google GTX Fallback
+        // Provider 2: Google Translate API endpoint fallback
         if (translatedBatch.isEmpty) {
           try {
-            final uri = Uri.parse('https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=$targetLangCode&dt=t&q=${Uri.encodeComponent(joinedText)}');
-            final res = await http.get(uri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 5));
+            final uri = Uri.parse('https://translate.googleapis.com/translate_a/single?client=dict-chrome-ex&sl=auto&tl=$targetLangCode&dt=t&q=${Uri.encodeComponent(joinedText)}');
+            final res = await http.get(uri, headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            }).timeout(const Duration(seconds: 4));
+
             if (res.statusCode == 200) {
               final data = jsonDecode(res.body);
               final sb = StringBuffer();
@@ -77,7 +85,25 @@ class LyricsTranslationService {
                   sb.write(item[0]);
                 }
               }
-              translatedBatch = sb.toString();
+              final text = sb.toString();
+              if (text.trim().isNotEmpty) {
+                translatedBatch = text;
+              }
+            }
+          } catch (_) {}
+        }
+
+        // Provider 3: MyMemory API Fallback
+        if (translatedBatch.isEmpty) {
+          try {
+            final uri = Uri.parse('https://api.mymemory.translated.net/get?q=${Uri.encodeComponent(joinedText)}&langpair=auto|$targetLangCode');
+            final res = await http.get(uri, headers: {'User-Agent': 'Mozilla/5.0'}).timeout(const Duration(seconds: 4));
+            if (res.statusCode == 200) {
+              final data = jsonDecode(res.body);
+              final text = data['responseData']?['translatedText']?.toString() ?? '';
+              if (text.isNotEmpty && !text.toLowerCase().contains('quota exceeded')) {
+                translatedBatch = text;
+              }
             }
           } catch (_) {}
         }

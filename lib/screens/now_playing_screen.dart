@@ -594,81 +594,57 @@ class _NowPlayingScreenState extends State<NowPlayingScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.white.withOpacity(0.06)),
         ),
-        child: Column(
+        child: Stack(
           children: [
-            // Top Action Bar: Hold 3s hint + Live Language & Studio Badge
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.touch_app_outlined, size: 13, color: AppColors.primary.withOpacity(0.85)),
-                      const SizedBox(width: 4),
-                      const Text(
-                        'Hold 3s to customize / translate',
-                        style: TextStyle(color: Colors.white54, fontSize: 10, fontWeight: FontWeight.w600),
+            // Clean edge-to-edge Lyrics List with Dynamic Animation & Font
+            ListView.builder(
+              controller: _lyricsScrollController,
+              physics: const BouncingScrollPhysics(),
+              itemCount: lyrics.length,
+              itemBuilder: (context, index) {
+                final line = lyrics[index];
+                final isCurrentLine = (index == currentLineIndex);
+
+                return GestureDetector(
+                  onTap: () => provider.seek(line.timestamp),
+                  onLongPress: () => _openLyricsStudioSheet(song, rawLyrics),
+                  child: _buildLyricAnimatedLine(line, isCurrentLine, baseStyle),
+                );
+              },
+            ),
+
+            // Subtle Floating Translation Indicator (auto-dismisses when done)
+            if (_isTranslatingLyrics)
+              Positioned(
+                top: 4,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF222222).withOpacity(0.92),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.primary.withOpacity(0.6)),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.black54, blurRadius: 8),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      SizedBox(
+                        width: 11,
+                        height: 11,
+                        child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Translating...',
+                        style: TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
                       ),
                     ],
                   ),
-                  GestureDetector(
-                    onTap: () => _openLyricsStudioSheet(song, rawLyrics),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.18),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.primary.withOpacity(0.4)),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (_isTranslatingLyrics) ...[
-                            const SizedBox(
-                              width: 10,
-                              height: 10,
-                              child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 2),
-                            ),
-                            const SizedBox(width: 6),
-                          ] else ...[
-                            const Icon(Icons.translate_rounded, size: 12, color: AppColors.primary),
-                            const SizedBox(width: 5),
-                          ],
-                          Text(
-                            _isTranslatingLyrics ? 'Translating...' : _getLanguageBadgeLabel(),
-                            style: const TextStyle(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(width: 4),
-                          const Icon(Icons.tune_rounded, size: 12, color: AppColors.primary),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-            Divider(color: Colors.white.withOpacity(0.06), height: 1),
-            const SizedBox(height: 6),
-
-            // Lyrics List with Dynamic Animation & Font
-            Expanded(
-              child: ListView.builder(
-                controller: _lyricsScrollController,
-                physics: const BouncingScrollPhysics(),
-                itemCount: lyrics.length,
-                itemBuilder: (context, index) {
-                  final line = lyrics[index];
-                  final isCurrentLine = (index == currentLineIndex);
-
-                  return GestureDetector(
-                    onTap: () => provider.seek(line.timestamp),
-                    onLongPress: () => _openLyricsStudioSheet(song, rawLyrics),
-                    child: _buildLyricAnimatedLine(line, isCurrentLine, baseStyle),
-                  );
-                },
-              ),
-            ),
           ],
         ),
       ),
